@@ -42,6 +42,26 @@ enum Mode
     Mode_Count
 };
 
+struct ScreenSpaceVertex
+{
+    glm::vec3 pos;
+    glm::vec2 uv;
+};
+
+const ScreenSpaceVertex screenSpaceVertices[] =
+{
+    { glm::vec3(-0.5, -0.5, 0.0), glm::vec2(0.0, 0.0) },
+    { glm::vec3( 0.5, -0.5, 0.0), glm::vec2(1.0, 0.0) },
+    { glm::vec3( 0.5,  0.5, 0.0), glm::vec2(1.0, 1.0) },
+    { glm::vec3(-0.5,  0.5, 0.0), glm::vec2(0.0, 1.0) }
+};
+
+const uint16_t quadIndices[] =
+{
+    0,1,2,0,2,3
+};
+
+
 struct App
 {
     // Loop
@@ -61,7 +81,7 @@ struct App
     std::vector<Program>  programs;
 
     // program indices
-    u32 texturedGeometryProgramIdx;
+    u32 texturedGeometryShaderIdx;
     
     // texture indices
     u32 diceTexIdx;
@@ -75,14 +95,15 @@ struct App
 
     // Embedded geometry (in-editor simple meshes such as
     // a screen filling quad, a cube, a sphere...)
-    GLuint embeddedVertices;
-    GLuint embeddedElements;
+    GLuint screenSpaceVbo;
+    GLuint screenSpaceIbo;
+
+    // VAO object to link our screen filling quad with our textured quad shader
+    GLuint screenSpaceVao;
 
     // Location of the texture uniform in the textured quad shader
     GLuint programUniformTexture;
 
-    // VAO object to link our screen filling quad with our textured quad shader
-    GLuint vao;
 };
 
 void Init(App* app);

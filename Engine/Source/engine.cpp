@@ -187,6 +187,35 @@ void Init(App* app)
     // - programs (and retrieve uniform indices)
     // - textures
 
+    //app->texturedGeometryShader = std::make_shared<Shader>();
+
+    app->texturedGeometryShaderIdx = LoadProgram(app, "Assets/Shaders/shaders.glsl", "TEXTURED_GEOMETRY");
+
+    glGenBuffers(1, &app->screenSpaceVbo);
+    glBindBuffer(GL_ARRAY_BUFFER, app->screenSpaceVbo);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(screenSpaceVertices), screenSpaceVertices, GL_STATIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    
+    glGenBuffers(1, &app->screenSpaceIbo);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, app->screenSpaceIbo);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(quadIndices), quadIndices, GL_STATIC_DRAW);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+    glGenVertexArrays(1, &app->screenSpaceVao);
+    glBindVertexArray(app->screenSpaceVao);
+    glBindBuffer(GL_ARRAY_BUFFER, app->screenSpaceVbo);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(ScreenSpaceVertex), (void*)0);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(ScreenSpaceVertex), (void*)(sizeof(float) * 3));
+    glEnableVertexAttribArray(1);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, app->screenSpaceIbo);
+    glBindVertexArray(0);
+
+    app->diceTexIdx = LoadTexture2D(app, "Assets/Textures/dice.png");
+
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
     app->mode = Mode_TexturedQuad;
 }
 
@@ -204,26 +233,44 @@ void Update(App* app)
 
 void Render(App* app)
 {
-    glClearColor(1, 0, 1, 1);
+    glClearColor(0, 0, 0, 1);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glViewport(0, 0, app->displaySize.x, app->displaySize.y);
 
     switch (app->mode)
     {
         case Mode_TexturedQuad:
-            {
-                // TODO: Draw your textured quad here!
-                // - clear the framebuffer
-                // - set the viewport
-                // - set the blending state
-                // - bind the texture into unit 0
-                // - bind the program 
-                //   (...and make its texture sample from unit 0)
-                // - bind the vao
-                // - glDrawElements() !!!
-            }
-            break;
+        {
+            // TODO: Draw your textured quad here!
+            // - clear the framebuffer
+            // - set the viewport
+            // - set the blending state
+            // - bind the texture into unit 0
+            // - bind the program 
+            //   (...and make its texture sample from unit 0)
+            // - bind the vao
+            // - glDrawElements() !!!
+            
+            Program& shader = app->programs[app->texturedGeometryShaderIdx];
 
-        default:;
+            glUseProgram(shader.handle);
+            glBindVertexArray(app->screenSpaceVao);
+
+            glUniform1i(glGetUniformLocation(shader.handle, "uTexture"), 0);
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, app->textures[app->diceTexIdx].handle);
+
+            //glBindBuffer(GL_ARRAY_BUFFER, app->screenSpaceVao);
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
+
+            glBindVertexArray(0);
+            glUseProgram(0);
+
+        }
+        break;
+
+        default:
+            break;
     }
 }
 
