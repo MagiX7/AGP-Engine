@@ -10,6 +10,8 @@
 #include <stb_image.h>
 #include <stb_image_write.h>
 
+#include <iostream>
+
 GLuint CreateProgramFromSource(String programSource, const char* shaderName)
 {
     GLchar  infoLogBuffer[1024] = {};
@@ -57,7 +59,7 @@ GLuint CreateProgramFromSource(String programSource, const char* shaderName)
         glGetShaderInfoLog(vshader, infoLogBufferSize, &infoLogSize, infoLogBuffer);
         ELOG("glCompileShader() failed with vertex shader %s\nReported message:\n%s\n", shaderName, infoLogBuffer);
     }
-
+    
     GLuint fshader = glCreateShader(GL_FRAGMENT_SHADER);
     glShaderSource(fshader, ARRAY_COUNT(fragmentShaderSource), fragmentShaderSource, fragmentShaderLengths);
     glCompileShader(fshader);
@@ -85,6 +87,8 @@ GLuint CreateProgramFromSource(String programSource, const char* shaderName)
     glDetachShader(programHandle, fshader);
     glDeleteShader(vshader);
     glDeleteShader(fshader);
+
+    std::cout << shaderName << " Shader loaded successfully." << std::endl;
 
     return programHandle;
 }
@@ -212,6 +216,10 @@ void Init(App* app)
     glBindVertexArray(0);
 
     app->diceTexIdx = LoadTexture2D(app, "Assets/Textures/dice.png");
+    app->whiteTexIdx = LoadTexture2D(app, "Assets/textures/color_white.png");
+    app->blackTexIdx = LoadTexture2D(app, "Assets/textures/color_black.png");
+    app->normalTexIdx = LoadTexture2D(app, "Assets/textures/color_normal.png");
+    app->magentaTexIdx = LoadTexture2D(app, "Assets/textures/color_magenta.png");
 
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -221,9 +229,22 @@ void Init(App* app)
 
 void Gui(App* app)
 {
+    ImGui::BeginMainMenuBar();
+    {
+        //ImGui::BeginMenu("View");
+        /*if (ImGui::MenuItem("Extensions"))
+        {
+
+        }*/
+        //ImGui::EndMenu();
+    }
+    ImGui::EndMainMenuBar();
+
     ImGui::Begin("Info");
     ImGui::Text("FPS: %f", 1.0f/app->deltaTime);
     ImGui::End();
+
+
 }
 
 void Update(App* app)
@@ -260,8 +281,7 @@ void Render(App* app)
             glActiveTexture(GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, app->textures[app->diceTexIdx].handle);
 
-            //glBindBuffer(GL_ARRAY_BUFFER, app->screenSpaceVao);
-            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
+            glDrawElements(GL_TRIANGLES, sizeof(quadIndices) / sizeof(u16), GL_UNSIGNED_SHORT, 0);
 
             glBindVertexArray(0);
             glUseProgram(0);

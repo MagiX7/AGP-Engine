@@ -5,6 +5,9 @@
 #pragma once
 
 #include "platform.h"
+#include "Mesh.h"
+#include "Vertex.h"
+
 #include <glad/glad.h>
 
 typedef glm::vec2  vec2;
@@ -42,11 +45,6 @@ enum Mode
     Mode_Count
 };
 
-struct ScreenSpaceVertex
-{
-    glm::vec3 pos;
-    glm::vec2 uv;
-};
 
 const ScreenSpaceVertex screenSpaceVertices[] =
 {
@@ -58,7 +56,7 @@ const ScreenSpaceVertex screenSpaceVertices[] =
 
 const uint16_t quadIndices[] =
 {
-    0,1,2,0,2,3
+    0, 1, 2, 0, 2, 3
 };
 
 
@@ -79,6 +77,7 @@ struct App
 
     std::vector<Texture>  textures;
     std::vector<Program>  programs;
+    std::vector<Mesh>     meshes;
 
     // program indices
     u32 texturedGeometryShaderIdx;
