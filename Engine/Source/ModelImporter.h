@@ -1,23 +1,18 @@
 #pragma once
 
 #include "Resources/Model.h"
-#include <vector>
-#include <memory>
 
-#include <assimp/cimport.h>
+#include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
-
-class App;
-class Material;
 
 class ModelImporter
 {
 public:
-	// Returns the index of the model
-	static std::shared_ptr<Model>  LoadModel(App* app, const char* filename);
+	static Model* ImportModel(std::string path);
+
 private:
-	static void ProcessAssimpMesh(const aiScene* scene, aiMesh* mesh, Mesh* myMesh, uint32_t baseMeshMaterialIndex, std::vector<uint32_t>& submeshMaterialIndices);
-	static void ProcessAssimpMaterial(App* app, aiMaterial* material, Material& myMaterial, std::string directory);
-	static void ProcessAssimpNode(const aiScene* scene, aiNode* node, Mesh* myMesh, uint32_t baseMeshMaterialIndex, std::vector<uint32_t>& submeshMaterialIndices);
+	static void ProcessNode(aiNode* node, const aiScene* scene, Model& model);
+	static void ProcessSubMesh(Mesh* myMesh, aiMesh* node, const aiScene* scene);
+	static void ComputeTangentsAndBiTangents(std::vector<MeshVertex>& vertices, unsigned int indicesCount);
 };

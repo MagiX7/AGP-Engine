@@ -224,7 +224,9 @@ void Init(App* app)
     
     SetShaderUniforms(app, app->texturedGeometryShaderIdx);
 
-    ModelImporter::LoadModel(app, "Assets/Patrick/Patrick.mtl");
+    // TODO: Need to create the buffers, so move Mesh and Submesh to classes and create methods for them
+    Model* model = ModelImporter::ImportModel("Assets/Patrick/Patrick.mtl");
+
 
     /*Program& shader = app->programs[app->texturedGeometryShaderIdx];
     int attribCount = -1;

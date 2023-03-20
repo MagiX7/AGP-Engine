@@ -11,8 +11,8 @@ struct ScreenSpaceVertex
 
 struct MeshVertex
 {
-    glm::vec3 pos = glm::vec3(-1);
-    glm::vec2 uv = glm::vec2(-1);
+    glm::vec3 position = glm::vec3(-1);
+    glm::vec2 texCoords = glm::vec2(-1);
     glm::vec3 normals = glm::vec3(-1);
     glm::vec3 tangents = glm::vec3(-1);
     glm::vec3 biTangents = glm::vec3(-1);

@@ -3,6 +3,7 @@
 #include "../Renderer/Vertex.h"
 #include "../Renderer/Buffer.h"
 #include "../Renderer/VertexArray.h"
+#include "Material.h"
 
 #include <vector>
 #include <stdint.h>

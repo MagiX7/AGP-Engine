@@ -1,17 +1,83 @@
 #include "ModelImporter.h"
 
-#include "engine.h"
-
-#include "Resources/Model.h"
-#include "Resources/Material.h"
-
 #include <iostream>
 
-void ModelImporter::ProcessAssimpMesh(const aiScene* scene, aiMesh* mesh, Mesh* myMesh, uint32_t baseMeshMaterialIndex, std::vector<uint32_t>& submeshMaterialIndices)
+Model* ModelImporter::ImportModel(std::string path)
+{
+    Assimp::Importer importer;
+    std::string exts;
+    importer.GetExtensionList(exts);
+    std::vector<std::string> extensions;
+    std::string currentExtension;
+    
+    for (int i = 0; i < exts.size(); ++i)
+    {
+        char currentChar = exts[i];
+        if (currentChar == '*')
+            continue;
+
+        if (currentChar == ';' || i == exts.size() - 1)
+        {
+            extensions.push_back(currentExtension);
+            currentExtension.clear();
+        }
+        else
+        {
+            currentExtension += exts[i];
+        }
+    }
+
+    std::string fileExtension = path.substr(path.find_last_of("."));
+
+    if (std::find(extensions.begin(), extensions.end(), fileExtension) == extensions.end())
+    {
+        std::cout << "Model Format " << fileExtension << " from " << path.c_str() << "not supported" << std::endl;
+        return nullptr;
+    }
+
+    const aiScene* scene = importer.ReadFile(path, aiProcess_CalcTangentSpace | aiProcess_Triangulate | aiProcess_FlipUVs);
+
+    if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
+    {
+        std::cout << "Assimp error: " << importer.GetErrorString() << std::endl;
+        return nullptr;
+    }
+
+    std::shared_ptr<Mesh> myMesh = std::make_unique<Mesh>();
+
+    Model* model = new Model();
+    
+    ProcessNode(scene->mRootNode, scene, *model);
+
+    std::cout << "Model " << path.c_str() << " loaded" << std::endl;
+
+    return model;
+}
+
+void ModelImporter::ProcessNode(aiNode* node, const aiScene* scene, Model& model)
+{
+    for (unsigned int i = 0; i < node->mNumMeshes; i++)
+    {
+        aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
+        ProcessSubMesh(&*model.mesh, mesh, scene);
+        //model.AddMesh(ProcessSubMesh(mesh, scene));
+        //model.meshes.push_back(ProcessMesh(mesh, scene));
+    }
+    
+    for (unsigned int i = 0; i < node->mNumChildren; i++)
+    {
+        ProcessNode(node->mChildren[i], scene, model);
+    }
+}
+
+void ModelImporter::ProcessSubMesh(Mesh* myMesh, aiMesh* mesh, const aiScene* scene)
 {
     std::vector<float> vertices;
     std::vector<uint32_t> indices;
 
+    //vertices.resize(mesh->mNumVertices);
+    //indices.resize(mesh->mNumFaces);
+    
     bool hasTexCoords = false;
     bool hasTangentSpace = false;
 
@@ -63,10 +129,11 @@ void ModelImporter::ProcessAssimpMesh(const aiScene* scene, aiMesh* mesh, Mesh* 
         }
     }
 
-    // store the proper (previously proceessed) material for this mesh
-    submeshMaterialIndices.push_back(baseMeshMaterialIndex + mesh->mMaterialIndex);
+    //if (!mesh->HasTangentsAndBitangents())
+    //{
+    //    ComputeTangentsAndBiTangents(vertices, mesh->mNumFaces);
+    //}
 
-    // create the vertex format
     VertexBufferLayout vertexBufferLayout = {};
     vertexBufferLayout.attributes.push_back(VertexBufferAttribute{ 0, 3, 0 });
     vertexBufferLayout.attributes.push_back(VertexBufferAttribute{ 1, 3, 3 * sizeof(float) });
@@ -91,168 +158,33 @@ void ModelImporter::ProcessAssimpMesh(const aiScene* scene, aiMesh* mesh, Mesh* 
     submesh.vertices.swap(vertices);
     submesh.indices.swap(indices);
     myMesh->submeshes.push_back(submesh);
+
+    //return new SubMesh(mesh->mName.C_Str(), vertices, indices);
 }
 
-void ModelImporter::ProcessAssimpMaterial(App* app, aiMaterial* material, Material& myMaterial, std::string directory)
+void ModelImporter::ComputeTangentsAndBiTangents(std::vector<MeshVertex>& vertices, unsigned int indicesCount)
 {
-    aiString name;
-    aiColor3D diffuseColor;
-    aiColor3D emissiveColor;
-    aiColor3D specularColor;
-    ai_real shininess;
-    material->Get(AI_MATKEY_NAME, name);
-    material->Get(AI_MATKEY_COLOR_DIFFUSE, diffuseColor);
-    material->Get(AI_MATKEY_COLOR_EMISSIVE, emissiveColor);
-    material->Get(AI_MATKEY_COLOR_SPECULAR, specularColor);
-    material->Get(AI_MATKEY_SHININESS, shininess);
-
-    myMaterial.name = name.C_Str();
-    myMaterial.albedo =glm::vec3(diffuseColor.r, diffuseColor.g, diffuseColor.b);
-    myMaterial.emissive =glm::vec3(emissiveColor.r, emissiveColor.g, emissiveColor.b);
-    myMaterial.smoothness = shininess / 256.0f;
-
-    //aiString aiFilename;
-    //if (material->GetTextureCount(aiTextureType_DIFFUSE) > 0)
-    //{
-    //    material->GetTexture(aiTextureType_DIFFUSE, 0, &aiFilename);
-    //    std::string filename = aiFilename.C_Str();
-    //    std::string filepath = directory + "/" + filename;
-    //    //String filename = MakeString(aiFilename.C_Str());
-    //    //String filepath = MakePath(directory, filename);
-    //    myMaterial.albedoTextureIndex = LoadTexture2D(app, filepath.str);
-    //}
-    //if (material->GetTextureCount(aiTextureType_EMISSIVE) > 0)
-    //{
-    //    material->GetTexture(aiTextureType_EMISSIVE, 0, &aiFilename);
-    //    String filename = MakeString(aiFilename.C_Str());
-    //    String filepath = MakePath(directory, filename);
-    //    myMaterial.emissiveTextureIdx = LoadTexture2D(app, filepath.str);
-    //}
-    //if (material->GetTextureCount(aiTextureType_SPECULAR) > 0)
-    //{
-    //    material->GetTexture(aiTextureType_SPECULAR, 0, &aiFilename);
-    //    String filename = MakeString(aiFilename.C_Str());
-    //    String filepath = MakePath(directory, filename);
-    //    myMaterial.specularTextureIdx = LoadTexture2D(app, filepath.str);
-    //}
-    //if (material->GetTextureCount(aiTextureType_NORMALS) > 0)
-    //{
-    //    material->GetTexture(aiTextureType_NORMALS, 0, &aiFilename);
-    //    String filename = MakeString(aiFilename.C_Str());
-    //    String filepath = MakePath(directory, filename);
-    //    myMaterial.normalsTextureIdx = LoadTexture2D(app, filepath.str);
-    //}
-    //if (material->GetTextureCount(aiTextureType_HEIGHT) > 0)
-    //{
-    //    material->GetTexture(aiTextureType_HEIGHT, 0, &aiFilename);
-    //    String filename = MakeString(aiFilename.C_Str());
-    //    String filepath = MakePath(directory, filename);
-    //    myMaterial.bumpTextureIdx = LoadTexture2D(app, filepath.str);
-    //}
-
-    //myMaterial.createNormalFromBump();
-}
-
-void ModelImporter::ProcessAssimpNode(const aiScene* scene, aiNode* node, Mesh* myMesh, uint32_t baseMeshMaterialIndex, std::vector<uint32_t>& submeshMaterialIndices)
-{
-    // process all the node's meshes (if any)
-    for (unsigned int i = 0; i < node->mNumMeshes; i++)
+    for (int i = 0; i < indicesCount; i += 3)
     {
-        aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
-        ModelImporter::ProcessAssimpMesh(scene, mesh, myMesh, baseMeshMaterialIndex, submeshMaterialIndices);
-    }
+        glm::vec2 uv1 = { vertices[i].texCoords };
+        glm::vec2 uv2 = { vertices[i + 1].texCoords };
+        glm::vec2 uv3 = { vertices[i + 2].texCoords };
 
-    // then do the same for each of its children
-    for (unsigned int i = 0; i < node->mNumChildren; i++)
-    {
-        ProcessAssimpNode(scene, node->mChildren[i], myMesh, baseMeshMaterialIndex, submeshMaterialIndices);
+        glm::vec2 deltaUv1 = uv2 - uv1;
+        glm::vec2 deltaUv2 = uv3 - uv1;
+
+        glm::vec3 edge1 = vertices[i + 1].position - vertices[i].position;
+        glm::vec3 edge2 = vertices[i + 2].position - vertices[i].position;
+
+        float f = 1.0f / (deltaUv1.x * deltaUv2.y - deltaUv2.x * deltaUv1.y);
+
+        vertices[i].tangents.x = f * (deltaUv2.y * edge1.x - deltaUv1.y * edge2.x);
+        vertices[i].tangents.y = f * (deltaUv2.y * edge1.y - deltaUv1.y * edge2.y);
+        vertices[i].tangents.z = f * (deltaUv2.y * edge1.z - deltaUv1.y * edge2.z);
+        vertices[i].tangents = glm::normalize(vertices[i].tangents);
+
+        if (i + 3 > indicesCount)
+            break;
     }
 }
 
-std::shared_ptr<Model> ModelImporter::LoadModel(App* app, const char* filename)
-{
-    const aiScene* scene = aiImportFile(filename,
-        aiProcess_Triangulate |
-        aiProcess_GenSmoothNormals |
-        aiProcess_CalcTangentSpace |
-        aiProcess_JoinIdenticalVertices |
-        aiProcess_PreTransformVertices |
-        aiProcess_ImproveCacheLocality |
-        aiProcess_OptimizeMeshes |
-        aiProcess_SortByPType);
-
-    if (!scene)
-    {
-        std::cout << "Error loading mesh " << filename << ": " << aiGetErrorString();
-        return nullptr;
-    }
-
-    app->meshes.push_back(Mesh{});
-    Mesh& mesh = app->meshes.back();
-    uint32_t meshIdx = (uint32_t)app->meshes.size() - 1u;
-
-    app->models.push_back(Model{});
-    Model& model = app->models.back();
-    model.meshIndex = meshIdx;
-    uint32_t modelIdx = (uint32_t)app->models.size() - 1u;
-
-    String directory = GetDirectoryPart(MakeString(filename));
-
-    // Create a list of materials
-    uint32_t baseMeshMaterialIndex = (uint32_t)app->materials.size();
-    for (unsigned int i = 0; i < scene->mNumMaterials; ++i)
-    {
-        app->materials.push_back(Material{});
-        Material& material = app->materials.back();
-        ProcessAssimpMaterial(app, scene->mMaterials[i], material, directory.str);
-    }
-
-    ProcessAssimpNode(scene, scene->mRootNode, &mesh, baseMeshMaterialIndex, model.materialsIndex);
-
-    aiReleaseImport(scene);
-
-    uint32_t vertexBufferSize = 0;
-    uint32_t indexBufferSize = 0;
-
-    for (uint32_t i = 0; i < mesh.submeshes.size(); ++i)
-    {
-        vertexBufferSize += mesh.submeshes[i].vertices.size() * sizeof(float);
-        indexBufferSize += mesh.submeshes[i].indices.size() * sizeof(uint32_t);
-    }
-
-
-    auto ret = std::make_shared<Model>();
-
-
-
-    /*glGenBuffers(1, &mesh.vboHandle);
-    glBindBuffer(GL_ARRAY_BUFFER, mesh.vboHandle);
-    glBufferData(GL_ARRAY_BUFFER, vertexBufferSize, NULL, GL_STATIC_DRAW);
-
-    glGenBuffers(1, &mesh.iboHandle);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh.iboHandle);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indexBufferSize, NULL, GL_STATIC_DRAW);*/
-
-    uint32_t indicesOffset = 0;
-    uint32_t verticesOffset = 0;
-
-    for (uint32_t i = 0; i < mesh.submeshes.size(); ++i)
-    {
-        const void* verticesData = mesh.submeshes[i].vertices.data();
-        const uint32_t   verticesSize = mesh.submeshes[i].vertices.size() * sizeof(float);
-        glBufferSubData(GL_ARRAY_BUFFER, verticesOffset, verticesSize, verticesData);
-        mesh.submeshes[i].vertexOffset = verticesOffset;
-        verticesOffset += verticesSize;
-
-        const void* indicesData = mesh.submeshes[i].indices.data();
-        const uint32_t   indicesSize = mesh.submeshes[i].indices.size() * sizeof(uint32_t);
-        glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, indicesOffset, indicesSize, indicesData);
-        mesh.submeshes[i].indexOffset = indicesOffset;
-        indicesOffset += indicesSize;
-    }
-
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-    return modelIdx;
-}
