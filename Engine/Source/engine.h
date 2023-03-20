@@ -5,8 +5,8 @@
 #pragma once
 
 #include "platform.h"
-#include "Mesh.h"
-#include "Vertex.h"
+#include "Resources/Model.h"
+#include "Resources/Material.h"
 
 #include <glad/glad.h>
 
@@ -78,8 +78,10 @@ struct App
     ivec2 displaySize;
 
     std::vector<Texture>  textures;
-    std::vector<Program>  programs;
+    std::vector<Material> materials;
     std::vector<Mesh>     meshes;
+    std::vector<Model>    models;
+    std::vector<Program>  programs;
 
     // program indices
     u32 texturedGeometryShaderIdx;

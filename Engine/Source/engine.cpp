@@ -6,6 +6,8 @@
 //
 
 #include "engine.h"
+#include "ModelImporter.h"
+
 #include <imgui.h>
 #include <stb_image.h>
 #include <stb_image_write.h>
@@ -221,6 +223,8 @@ void Init(App* app)
     app->modelShaderIndex = LoadProgram(app, "Assets/Shaders/model.glsl", "MODEL");
     
     SetShaderUniforms(app, app->texturedGeometryShaderIdx);
+
+    ModelImporter::LoadModel(app, "Assets/Patrick/Patrick.mtl");
 
     /*Program& shader = app->programs[app->texturedGeometryShaderIdx];
     int attribCount = -1;

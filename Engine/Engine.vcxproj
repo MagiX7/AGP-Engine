@@ -43,13 +43,13 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
@@ -156,9 +156,10 @@
     <ClCompile Include="Dependencies\imgui-docking\imgui_widgets.cpp" />
     <ClCompile Include="Dependencies\stb\stb.cpp" />
     <ClCompile Include="Source\engine.cpp" />
-    <ClCompile Include="Source\Mesh.cpp" />
     <ClCompile Include="Source\ModelImporter.cpp" />
     <ClCompile Include="Source\platform.cpp" />
+    <ClCompile Include="Source\Renderer\Buffer.cpp" />
+    <ClCompile Include="Source\Renderer\VertexArray.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Dependencies\glad\include\glad\glad.h" />
@@ -176,10 +177,13 @@
     <ClInclude Include="Dependencies\stb\stb_image.h" />
     <ClInclude Include="Dependencies\stb\stb_image_write.h" />
     <ClInclude Include="Source\engine.h" />
-    <ClInclude Include="Source\Mesh.h" />
+    <ClInclude Include="Source\Renderer\Buffer.h" />
+    <ClInclude Include="Source\Renderer\VertexArray.h" />
+    <ClInclude Include="Source\Resources\Material.h" />
+    <ClInclude Include="Source\Resources\Model.h" />
     <ClInclude Include="Source\ModelImporter.h" />
     <ClInclude Include="Source\platform.h" />
-    <ClInclude Include="Source\Vertex.h" />
+    <ClInclude Include="Source\Renderer\Vertex.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
