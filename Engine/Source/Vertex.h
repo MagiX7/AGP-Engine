@@ -31,9 +31,16 @@ struct VertexBufferLayout
 };
 
 
+struct VertexShaderAttribute
+{
+    uint8_t location;
+    uint8_t componentCount;
+};
 
-
-
+struct VertexShaderLayout
+{
+    std::vector< VertexShaderAttribute> attributes;
+};
 
 
 

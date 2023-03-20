@@ -182,6 +182,30 @@ u32 LoadTexture2D(App* app, const char* filepath)
     }
 }
 
+void SetShaderUniforms(App* app, int shaderIndex)
+{
+    Program& shader = app->programs[shaderIndex];
+    int attribCount = -1;
+    glGetProgramiv(shader.handle, GL_ACTIVE_ATTRIBUTES, &attribCount);
+    for (int i = 0; i < attribCount; ++i)
+    {
+        GLchar attribName[64] = {};
+        int attribNameLength;
+        GLint attribSize;
+        GLenum type = -1;
+        glGetActiveAttrib(shader.handle, i, ARRAY_COUNT(attribName), &attribNameLength, &attribSize, &type, attribName);
+
+        u8 attribLoc = glGetAttribLocation(shader.handle, attribName);
+        
+        // How to get component count??????
+        shader.vertexInputLayout.attributes.push_back({ attribLoc, (u8)attribSize });
+
+        int a = 0;
+        a += 9;
+    }
+}
+
+
 void Init(App* app)
 {
     // TODO: Initialize your resources here!
@@ -194,6 +218,28 @@ void Init(App* app)
     //app->texturedGeometryShader = std::make_shared<Shader>();
 
     app->texturedGeometryShaderIdx = LoadProgram(app, "Assets/Shaders/shaders.glsl", "TEXTURED_GEOMETRY");
+    app->modelShaderIndex = LoadProgram(app, "Assets/Shaders/model.glsl", "MODEL");
+    
+    SetShaderUniforms(app, app->texturedGeometryShaderIdx);
+
+    /*Program& shader = app->programs[app->texturedGeometryShaderIdx];
+    int attribCount = -1;
+    glGetProgramiv(shader.handle, GL_ACTIVE_ATTRIBUTES, &attribCount);
+    for (int i = 0; i < attribCount; ++i)
+    {
+        GLchar attribName[64] = {};
+        int attribNameLength;
+        int attribSize;
+        GLenum type;
+        glGetActiveAttrib(shader.handle, i, ARRAY_COUNT(attribName), &attribNameLength, &attribSize, &type, attribName);
+
+        int attribLoc = glGetAttribLocation(shader.handle, attribName);
+
+        shader.vertexInputLayout.attributes.push_back({ (u8)attribLoc, (u8)attribSize});
+        int a = 0;
+        a += 9;
+    }*/
+
 
     glGenBuffers(1, &app->screenSpaceVbo);
     glBindBuffer(GL_ARRAY_BUFFER, app->screenSpaceVbo);

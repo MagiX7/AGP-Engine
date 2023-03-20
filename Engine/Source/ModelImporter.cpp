@@ -87,7 +87,7 @@
 //    myMesh->submeshes.push_back(submesh);
 //}
 //
-//void ProcessAssimpMaterial(App* app, aiMaterial* material, Material& myMaterial, String directory)
+//void ProcessAssimpMaterial(App* app, aiMaterial* material, Material& myMaterial, std::string directory)
 //{
 //    aiString name;
 //    aiColor3D diffuseColor;
