@@ -44,7 +44,8 @@ struct Program
 enum Mode
 {
     Mode_TexturedQuad,
-    Mode_Count
+    Mode_Count,
+    Mode_Model
 };
 
 
@@ -93,6 +94,13 @@ struct App
     u32 blackTexIdx;
     u32 normalTexIdx;
     u32 magentaTexIdx;
+
+
+    // Models
+    Model* patrickModel;
+    std::shared_ptr<VertexArray> patrickVao;
+    std::shared_ptr<VertexBuffer> patrickVbo;
+    std::shared_ptr<IndexBuffer> patrickIbo;
 
     // Mode
     Mode mode;

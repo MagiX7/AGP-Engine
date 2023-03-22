@@ -20,8 +20,8 @@ struct VertexBufferLayout
 class VertexBuffer
 {
 public:
-	template <typename T>
-	VertexBuffer(T* vertices, uint16_t verticesCount);
+	//template <typename T>
+	VertexBuffer(float* vertices, uint16_t verticesCount);
 	virtual ~VertexBuffer();
 
 	void Bind();
@@ -48,7 +48,7 @@ public:
 	void Bind();
 	void Unbind();
 
-	inline const uint16_t& GetIndices() const { return count; }
+	inline const uint16_t& GetCount() const { return count; }
 
 private:
 	unsigned int id;

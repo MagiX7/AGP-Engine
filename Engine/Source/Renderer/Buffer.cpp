@@ -4,12 +4,12 @@
 #include <glad/glad.h>
 
 // Vertex Buffer ===========================================================
-template <typename T>
-VertexBuffer::VertexBuffer(T* vertices, uint16_t verticesCount) : count(verticesCount)
+//template <typename T>
+VertexBuffer::VertexBuffer(float* vertices, uint16_t verticesCount) : count(verticesCount)
 {
     glGenBuffers(1, &id);
     glBindBuffer(GL_ARRAY_BUFFER, id);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(T) * verticesCount, vertices, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(/*T*/float) * verticesCount, vertices, GL_STATIC_DRAW);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 

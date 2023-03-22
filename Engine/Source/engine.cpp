@@ -225,7 +225,7 @@ void Init(App* app)
     SetShaderUniforms(app, app->texturedGeometryShaderIdx);
 
     // TODO: Need to create the buffers, so move Mesh and Submesh to classes and create methods for them
-    Model* model = ModelImporter::ImportModel("Assets/Patrick/Patrick.mtl");
+    app->patrickModel = ModelImporter::ImportModel("Assets/Models/Sponza/Sponza.obj");
 
 
     /*Program& shader = app->programs[app->texturedGeometryShaderIdx];
@@ -276,7 +276,8 @@ void Init(App* app)
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    app->mode = Mode_TexturedQuad;
+    //app->mode = Mode_TexturedQuad;
+    app->mode = Mode_Model;
 }
 
 void Gui(App* app)
@@ -338,8 +339,22 @@ void Render(App* app)
             glBindVertexArray(0);
             glUseProgram(0);
 
+            break;
         }
-        break;
+        case Mode_Model:
+        {
+            //app->patrickVao->Bind();
+
+            Program& p = app->programs[app->modelShaderIndex];
+            glUseProgram(p.handle);
+
+            glUniform1i(glGetUniformLocation(p.handle, "uTexture"), 0);
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, app->textures[app->whiteTexIdx].handle);
+
+            app->patrickModel->Draw();
+            break;
+        }
 
         default:
             break;

@@ -29,11 +29,11 @@ Model* ModelImporter::ImportModel(std::string path)
 
     std::string fileExtension = path.substr(path.find_last_of("."));
 
-    if (std::find(extensions.begin(), extensions.end(), fileExtension) == extensions.end())
+    /*if (std::find(extensions.begin(), extensions.end(), fileExtension) == extensions.end())
     {
-        std::cout << "Model Format " << fileExtension << " from " << path.c_str() << "not supported" << std::endl;
+        std::cout << "Model Format " << fileExtension << " from " << path.c_str() << " not supported" << std::endl;
         return nullptr;
-    }
+    }*/
 
     const aiScene* scene = importer.ReadFile(path, aiProcess_CalcTangentSpace | aiProcess_Triangulate | aiProcess_FlipUVs);
 
@@ -59,7 +59,7 @@ void ModelImporter::ProcessNode(aiNode* node, const aiScene* scene, Model& model
     for (unsigned int i = 0; i < node->mNumMeshes; i++)
     {
         aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
-        ProcessSubMesh(&*model.mesh, mesh, scene);
+        model.AddMesh(ProcessMesh(mesh, scene));
         //model.AddMesh(ProcessSubMesh(mesh, scene));
         //model.meshes.push_back(ProcessMesh(mesh, scene));
     }
@@ -70,7 +70,7 @@ void ModelImporter::ProcessNode(aiNode* node, const aiScene* scene, Model& model
     }
 }
 
-void ModelImporter::ProcessSubMesh(Mesh* myMesh, aiMesh* mesh, const aiScene* scene)
+std::shared_ptr<Mesh> ModelImporter::ProcessMesh(aiMesh* mesh, const aiScene* scene)
 {
     std::vector<float> vertices;
     std::vector<uint32_t> indices;
@@ -152,12 +152,14 @@ void ModelImporter::ProcessSubMesh(Mesh* myMesh, aiMesh* mesh, const aiScene* sc
         vertexBufferLayout.stride += 3 * sizeof(float);
     }
 
-    // add the submesh into the mesh
-    Submesh submesh = {};
-    submesh.vertexBufferLayout = vertexBufferLayout;
-    submesh.vertices.swap(vertices);
-    submesh.indices.swap(indices);
-    myMesh->submeshes.push_back(submesh);
+    std::shared_ptr<Mesh> myMesh = std::make_shared<Mesh>(vertices, indices, vertexBufferLayout);
+    return myMesh;
+
+    //Submesh submesh = {};
+    //submesh.vertexBufferLayout = vertexBufferLayout;
+    //submesh.vertices.swap(vertices);
+    //submesh.indices.swap(indices);
+    //myMesh.submeshes.push_back(submesh);
 
     //return new SubMesh(mesh->mName.C_Str(), vertices, indices);
 }
