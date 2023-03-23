@@ -43,8 +43,6 @@ Model* ModelImporter::ImportModel(std::string path)
         return nullptr;
     }
 
-    std::shared_ptr<Mesh> myMesh = std::make_unique<Mesh>();
-
     Model* model = new Model();
     
     ProcessNode(scene->mRootNode, scene, *model);
@@ -78,6 +76,7 @@ std::shared_ptr<Mesh> ModelImporter::ProcessMesh(aiMesh* mesh, const aiScene* sc
     //vertices.resize(mesh->mNumVertices);
     //indices.resize(mesh->mNumFaces);
     
+    bool hasNormals = false;
     bool hasTexCoords = false;
     bool hasTangentSpace = false;
 
@@ -87,9 +86,13 @@ std::shared_ptr<Mesh> ModelImporter::ProcessMesh(aiMesh* mesh, const aiScene* sc
         vertices.push_back(mesh->mVertices[i].x);
         vertices.push_back(mesh->mVertices[i].y);
         vertices.push_back(mesh->mVertices[i].z);
-        vertices.push_back(mesh->mNormals[i].x);
-        vertices.push_back(mesh->mNormals[i].y);
-        vertices.push_back(mesh->mNormals[i].z);
+        if (mesh->mNormals)
+        {
+            vertices.push_back(mesh->mNormals[i].x);
+            vertices.push_back(mesh->mNormals[i].y);
+            vertices.push_back(mesh->mNormals[i].z);
+            hasNormals = true;
+        }
 
         if (mesh->mTextureCoords[0]) // does the mesh contain texture coordinates?
         {
@@ -136,8 +139,11 @@ std::shared_ptr<Mesh> ModelImporter::ProcessMesh(aiMesh* mesh, const aiScene* sc
 
     VertexBufferLayout vertexBufferLayout = {};
     vertexBufferLayout.attributes.push_back(VertexBufferAttribute{ 0, 3, 0 });
-    vertexBufferLayout.attributes.push_back(VertexBufferAttribute{ 1, 3, 3 * sizeof(float) });
-    vertexBufferLayout.stride = 6 * sizeof(float);
+    if (hasNormals)
+    {
+        vertexBufferLayout.attributes.push_back(VertexBufferAttribute{ 1, 3, 3 * sizeof(float) });
+        vertexBufferLayout.stride = 6 * sizeof(float);
+    }
     if (hasTexCoords)
     {
         vertexBufferLayout.attributes.push_back(VertexBufferAttribute{ 2, 2, vertexBufferLayout.stride });

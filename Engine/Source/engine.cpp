@@ -210,41 +210,15 @@ void SetShaderUniforms(App* app, int shaderIndex)
 
 void Init(App* app)
 {
-    // TODO: Initialize your resources here!
-    // - vertex buffers
-    // - element/index buffers
-    // - vaos
-    // - programs (and retrieve uniform indices)
-    // - textures
-
-    //app->texturedGeometryShader = std::make_shared<Shader>();
+    app->camera = Camera({ 0,5,2 }, 60.0f, 1280 / 720);
 
     app->texturedGeometryShaderIdx = LoadProgram(app, "Assets/Shaders/shaders.glsl", "TEXTURED_GEOMETRY");
     app->modelShaderIndex = LoadProgram(app, "Assets/Shaders/model.glsl", "MODEL");
     
     SetShaderUniforms(app, app->texturedGeometryShaderIdx);
 
-    // TODO: Need to create the buffers, so move Mesh and Submesh to classes and create methods for them
-    app->patrickModel = ModelImporter::ImportModel("Assets/Models/Sponza/Sponza.obj");
-
-
-    /*Program& shader = app->programs[app->texturedGeometryShaderIdx];
-    int attribCount = -1;
-    glGetProgramiv(shader.handle, GL_ACTIVE_ATTRIBUTES, &attribCount);
-    for (int i = 0; i < attribCount; ++i)
-    {
-        GLchar attribName[64] = {};
-        int attribNameLength;
-        int attribSize;
-        GLenum type;
-        glGetActiveAttrib(shader.handle, i, ARRAY_COUNT(attribName), &attribNameLength, &attribSize, &type, attribName);
-
-        int attribLoc = glGetAttribLocation(shader.handle, attribName);
-
-        shader.vertexInputLayout.attributes.push_back({ (u8)attribLoc, (u8)attribSize});
-        int a = 0;
-        a += 9;
-    }*/
+    // TODO: Patrick gives problems
+    app->patrickModel = ModelImporter::ImportModel("Assets/Models/Patrick/Patrick.obj");
 
 
     glGenBuffers(1, &app->screenSpaceVbo);
@@ -347,10 +321,16 @@ void Render(App* app)
 
             Program& p = app->programs[app->modelShaderIndex];
             glUseProgram(p.handle);
+            //glUniform4dv(glGetUniformLocation(p.handle, "uTexture"), 0);
+
+            glUniformMatrix4fv(glGetUniformLocation(p.handle, "view"), 1, GL_FALSE, glm::value_ptr(app->camera.GetView()));
+            glUniformMatrix4fv(glGetUniformLocation(p.handle, "projection"), 1, GL_FALSE, glm::value_ptr(app->camera.GetProjection()));
+            glUniformMatrix4fv(glGetUniformLocation(p.handle, "model"), 1, GL_FALSE, glm::value_ptr(app->patrickModel->GetTransform()));
+            
 
             glUniform1i(glGetUniformLocation(p.handle, "uTexture"), 0);
             glActiveTexture(GL_TEXTURE0);
-            glBindTexture(GL_TEXTURE_2D, app->textures[app->whiteTexIdx].handle);
+            glBindTexture(GL_TEXTURE_2D, app->textures[app->diceTexIdx].handle);
 
             app->patrickModel->Draw();
             break;

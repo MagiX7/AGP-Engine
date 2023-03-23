@@ -7,6 +7,7 @@
 #include "platform.h"
 #include "Resources/Model.h"
 #include "Resources/Material.h"
+#include "Renderer/Camera.h"
 
 #include <glad/glad.h>
 
@@ -101,6 +102,8 @@ struct App
     std::shared_ptr<VertexArray> patrickVao;
     std::shared_ptr<VertexBuffer> patrickVbo;
     std::shared_ptr<IndexBuffer> patrickIbo;
+
+    Camera camera;
 
     // Mode
     Mode mode;

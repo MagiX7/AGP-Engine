@@ -39,7 +39,7 @@ void VertexArray::SetVertexBuffer(const std::shared_ptr<VertexBuffer>& vertexBuf
             GL_FLOAT,
             attribute.normalized,
             layout.stride,
-            (void*)(offset*sizeof(GL_FLOAT)));
+            (void*)(attribute.offset/**sizeof(GL_FLOAT)*/));
         glEnableVertexAttribArray(i);
 
         offset += attribute.componentCount;

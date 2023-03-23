@@ -13,12 +13,16 @@ layout(location = 4) in vec3 aBitangents;
 
 out vec2 vTexCoords;
 
+uniform mat4 model;
+uniform mat4 view;
+uniform mat4 projection;
+
 void main()
 {
 	vec3 pos = aPosition;
 	pos.z *= -1.0;
 
-	gl_Position = vec4(pos, 1);
+	gl_Position = projection * view * model * vec4(pos, 1);
 	vTexCoords = aTexCoord;
 }
 

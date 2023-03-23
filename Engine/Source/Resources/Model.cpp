@@ -1,6 +1,8 @@
 #include "Model.h"
 
 #include <glad/glad.h>
+#include <glm/gtx/transform.hpp>
+#include <glm/gtx/quaternion.hpp>
 
 //Submesh::Submesh(std::vector<float> vertices, std::vector<uint32_t> indices)
 //{
@@ -43,7 +45,7 @@ void Mesh::Draw()
 
 // ==============================================================
 
-Model::Model()
+Model::Model() : transform(glm::mat4(1.0f))
 {
 	
 }
@@ -57,5 +59,10 @@ void Model::Draw()
 {
 	for (auto mesh : meshes)
 		mesh->Draw();
+}
+
+const glm::mat4& Model::GetTransform()
+{
+	return glm::translate(glm::mat4(1.0), position);
 }
 

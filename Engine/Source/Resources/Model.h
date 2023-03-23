@@ -90,9 +90,15 @@ public:
 
 	void Draw();
 
+	const glm::mat4& GetTransform();
+
 private:
 
 	std::vector<std::shared_ptr<Mesh>> meshes;
 	std::vector<Material> materials;
 
+	glm::mat4 transform;
+	glm::vec3 position;
+	glm::vec3 eulerAngles;
+	glm::vec3 scale;
 };
