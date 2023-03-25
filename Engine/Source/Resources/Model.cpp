@@ -4,6 +4,8 @@
 #include <glm/gtx/transform.hpp>
 #include <glm/gtx/euler_angles.hpp>
 
+#include <iostream>
+
 //Submesh::Submesh(std::vector<float> vertices, std::vector<uint32_t> indices)
 //{
 //
@@ -15,12 +17,12 @@
 
 // ==============================================================
 
-Mesh::Mesh(std::vector<float> vertices, std::vector<uint32_t> indices, VertexBufferLayout layout) : material(nullptr)
+Mesh::Mesh(const std::string& meshName, std::vector<float> vertices, std::vector<uint32_t> indices, VertexBufferLayout layout)
+	: name(meshName), material(nullptr)
 {
 	vao = std::make_shared<VertexArray>();
 	
 	vbo = std::make_shared<VertexBuffer>(&vertices[0], vertices.size());
-	//vertexBufferLayout = layout;
 	vbo->SetLayout(layout);
 	vao->SetVertexBuffer(vbo);
 
@@ -36,6 +38,12 @@ Mesh::~Mesh()
 
 void Mesh::Draw()
 {
+	//if (!material)
+	//{
+	//	std::cout << "Assign a material to mesh " << name << std::endl;
+	//	return;
+	//}
+
 	vao->Bind();
 	ibo->Bind();
 	glDrawElements(GL_TRIANGLES, ibo->GetCount(), GL_UNSIGNED_INT, 0);
@@ -45,8 +53,8 @@ void Mesh::Draw()
 
 // ==============================================================
 
-Model::Model()
-	: position(glm::vec3(0, 0, 0)), eulerAngles(glm::vec3(0.0f)), scale(glm::vec3(1.0f))
+Model::Model(const std::string& modelName)
+	: name(modelName), position(glm::vec3(0, 0, 0)), eulerAngles(glm::vec3(0.0f)), scale(glm::vec3(1.0f))
 {
 	UpdateTransform();
 }

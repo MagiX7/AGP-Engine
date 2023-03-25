@@ -98,10 +98,12 @@ struct App
 
 
     // Models
-    Model* patrickModel;
+    std::shared_ptr<Model> patrickModel;
+    std::shared_ptr<Shader> patrickShader;
     std::shared_ptr<VertexArray> patrickVao;
     std::shared_ptr<VertexBuffer> patrickVbo;
     std::shared_ptr<IndexBuffer> patrickIbo;
+    std::shared_ptr<Texture2D> patrickTexture;
 
     Camera camera;
 

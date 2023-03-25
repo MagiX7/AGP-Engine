@@ -53,23 +53,24 @@ class Mesh
 {
 public:
 	Mesh() {};
-	Mesh(std::vector<float> vertices, std::vector<uint32_t> indices, VertexBufferLayout layout);
+	Mesh(const std::string& name, std::vector<float> vertices, std::vector<uint32_t> indices, VertexBufferLayout layout);
 	virtual ~Mesh();
-
-	inline const std::shared_ptr<VertexBuffer>& GetVertexBuffer() { return vbo; }
-	inline const std::shared_ptr<IndexBuffer>& GetIndexBuffer() { return ibo; }
-
-	inline void SetVertexBufferLayout(VertexBufferLayout layout) { vertexBufferLayout = layout; }
 
 	void Draw();
 
+	void SetMaterial(std::shared_ptr<Material> mat) { material = mat; }
+		
+	inline const std::shared_ptr<VertexBuffer>& GetVertexBuffer() { return vbo; }
+	inline const std::shared_ptr<IndexBuffer>& GetIndexBuffer() { return ibo; }
+
 private:
+	std::string name;
+
 	std::shared_ptr<VertexArray> vao;
 	std::shared_ptr<VertexBuffer> vbo;
 	std::shared_ptr<IndexBuffer> ibo;
-	Material* material;
+	std::shared_ptr<Material> material;
 
-	VertexBufferLayout vertexBufferLayout;
 	std::vector<float> vertices;
 	std::vector<uint32_t> indices;
 };
@@ -78,7 +79,7 @@ private:
 class Model
 {
 public:
-	Model();
+	Model(const std::string& name);
 	virtual ~Model();
 
 	inline const std::vector<std::shared_ptr<Mesh>>& GetMeshes() { return meshes; }
@@ -106,7 +107,7 @@ public:
 	const glm::mat4& GetTransform();
 
 private:
-
+	std::string name;
 	std::vector<std::shared_ptr<Mesh>> meshes;
 	std::vector<Material> materials;
 

@@ -41,7 +41,7 @@ void main()
 {
 	fragColor = vec4(1,0,0,1);
 	//fragColor = vec4(vTexCoords, 0, 1);
-	//fragColor = texture(uTexture, vTexCoords);
+	fragColor = texture(uTexture, vTexCoords);
 }
 
 #endif

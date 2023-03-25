@@ -1,8 +1,9 @@
 #include "ModelImporter.h"
 
 #include <iostream>
+#include <memory>
 
-Model* ModelImporter::ImportModel(std::string path)
+std::shared_ptr<Model> ModelImporter::ImportModel(std::string path)
 {
     Assimp::Importer importer;
     std::string exts;
@@ -43,8 +44,16 @@ Model* ModelImporter::ImportModel(std::string path)
         return nullptr;
     }
 
-    Model* model = new Model();
-    
+    std::string name = path.substr(path.find_last_of("/") + 1);
+    std::shared_ptr<Model> model = std::make_shared<Model>(name);
+
+    std::shared_ptr<Material> material = std::make_shared<Material>("Default Material");
+
+    std::string directory = path.substr(0, path.find_last_of("/") + 1);
+
+    for (unsigned int i = 0; i < scene->mNumMaterials; ++i)
+        ProcessMaterial(scene->mMaterials[i], *material, directory);
+
     ProcessNode(scene->mRootNode, scene, *model);
 
     std::cout << "Model " << path.c_str() << " loaded" << std::endl;
@@ -159,7 +168,7 @@ std::shared_ptr<Mesh> ModelImporter::ProcessMesh(aiMesh* mesh, const aiScene* sc
         vertexBufferLayout.stride += 3 * sizeof(float);
     }
 
-    std::shared_ptr<Mesh> myMesh = std::make_shared<Mesh>(vertices, indices, vertexBufferLayout);
+    std::shared_ptr<Mesh> myMesh = std::make_shared<Mesh>(mesh->mName.C_Str(), vertices, indices, vertexBufferLayout);
     return myMesh;
 
     //Submesh submesh = {};
@@ -169,6 +178,60 @@ std::shared_ptr<Mesh> ModelImporter::ProcessMesh(aiMesh* mesh, const aiScene* sc
     //myMesh.submeshes.push_back(submesh);
 
     //return new SubMesh(mesh->mName.C_Str(), vertices, indices);
+}
+
+void ModelImporter::ProcessMaterial(aiMaterial* material, Material& myMaterial, const std::string& directory)
+{
+    aiString name;
+    aiColor3D diffuseColor;
+    aiColor3D emissiveColor;
+    aiColor3D specularColor;
+    ai_real shininess;
+    material->Get(AI_MATKEY_NAME, name);
+    material->Get(AI_MATKEY_COLOR_DIFFUSE, diffuseColor);
+    material->Get(AI_MATKEY_COLOR_EMISSIVE, emissiveColor);
+    material->Get(AI_MATKEY_COLOR_SPECULAR, specularColor);
+    material->Get(AI_MATKEY_SHININESS, shininess);
+
+    myMaterial.SetName(name.C_Str());
+    myMaterial.SetAlbedoColor({ diffuseColor.r, diffuseColor.g, diffuseColor.b });
+    myMaterial.SetEmissiveColor({ emissiveColor.r, emissiveColor.g, emissiveColor.b });
+
+    myMaterial.SetSmoothness(shininess / 256.0f);
+
+    aiString aiFilename;
+    if (material->GetTextureCount(aiTextureType_DIFFUSE) > 0)
+    {
+        material->GetTexture(aiTextureType_DIFFUSE, 0, &aiFilename);
+        std::string filepath = directory + aiFilename.C_Str();
+        myMaterial.SetAlbedoMap(std::make_shared<Texture2D>(filepath));
+    }
+    if (material->GetTextureCount(aiTextureType_EMISSIVE) > 0)
+    {
+        material->GetTexture(aiTextureType_EMISSIVE, 0, &aiFilename);
+        std::string filepath = directory + aiFilename.C_Str();
+        myMaterial.SetEmissiveMap(std::make_shared<Texture2D>(filepath));
+    }
+    if (material->GetTextureCount(aiTextureType_SPECULAR) > 0)
+    {
+        material->GetTexture(aiTextureType_SPECULAR, 0, &aiFilename);
+        std::string filepath = directory + aiFilename.C_Str();
+        myMaterial.SetSpecularMap(std::make_shared<Texture2D>(filepath));
+    }
+    if (material->GetTextureCount(aiTextureType_NORMALS) > 0)
+    {
+        material->GetTexture(aiTextureType_NORMALS, 0, &aiFilename);
+        std::string filepath = directory + aiFilename.C_Str();
+        myMaterial.SetNormalMap(std::make_shared<Texture2D>(filepath));
+    }
+    if (material->GetTextureCount(aiTextureType_HEIGHT) > 0)
+    {
+        material->GetTexture(aiTextureType_HEIGHT, 0, &aiFilename);
+        std::string filepath = directory + aiFilename.C_Str();
+        myMaterial.SetBumpMap(std::make_shared<Texture2D>(filepath));
+    }
+
+    //myMaterial.createNormalFromBump();
 }
 
 void ModelImporter::ComputeTangentsAndBiTangents(std::vector<MeshVertex>& vertices, unsigned int indicesCount)

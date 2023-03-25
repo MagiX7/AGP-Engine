@@ -7,6 +7,7 @@
 
 #include "engine.h"
 #include "ModelImporter.h"
+#include "Renderer/Shader.h"
 
 #include <imgui.h>
 #include <stb_image.h>
@@ -53,7 +54,8 @@ GLuint CreateProgramFromSource(String programSource, const char* shaderName)
     };
 
     GLuint vshader = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vshader, ARRAY_COUNT(vertexShaderSource), vertexShaderSource, vertexShaderLengths);
+    int a = ARRAY_COUNT(vertexShaderSource);
+    glShaderSource(vshader, a, vertexShaderSource, vertexShaderLengths);
     glCompileShader(vshader);
     glGetShaderiv(vshader, GL_COMPILE_STATUS, &success);
     if (!success)
@@ -63,7 +65,8 @@ GLuint CreateProgramFromSource(String programSource, const char* shaderName)
     }
     
     GLuint fshader = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(fshader, ARRAY_COUNT(fragmentShaderSource), fragmentShaderSource, fragmentShaderLengths);
+    a = ARRAY_COUNT(fragmentShaderSource);
+    glShaderSource(fshader, a, fragmentShaderSource, fragmentShaderLengths);
     glCompileShader(fshader);
     glGetShaderiv(fshader, GL_COMPILE_STATUS, &success);
     if (!success)
@@ -210,7 +213,7 @@ void SetShaderUniforms(App* app, int shaderIndex)
 
 void Init(App* app)
 {
-    app->camera = Camera({ 0,2,5 }, { 0,0,0 }, 60.0f, 1280 / 720);
+    app->camera = Camera({ 0,2,2 }, { 0,0,0 }, 45.0f, 1280 / 720);
 
     app->texturedGeometryShaderIdx = LoadProgram(app, "Assets/Shaders/shaders.glsl", "TEXTURED_GEOMETRY");
     app->modelShaderIndex = LoadProgram(app, "Assets/Shaders/model.glsl", "MODEL");
@@ -218,9 +221,10 @@ void Init(App* app)
     SetShaderUniforms(app, app->texturedGeometryShaderIdx);
 
     // TODO: Patrick gives problems
-    //app->patrickModel = ModelImporter::ImportModel("Assets/Models/Sponza/Sponza.obj");
-    app->patrickModel = ModelImporter::ImportModel("Assets/Models/Patrick/Patrick.obj");
-
+    app->patrickModel = ModelImporter::ImportModel("Assets/Models/Sponza/Sponza.obj");
+    //app->patrickModel = ModelImporter::ImportModel("Assets/Models/Cerberus/Cerberus.fbx");
+    app->patrickTexture = std::make_shared<Texture2D>("Assets/Models/Patrick/Skin_Patrick.png");
+    app->patrickShader = std::make_shared<Shader>("Assets/Shaders/model.glsl", "MODEL");
 
     glGenBuffers(1, &app->screenSpaceVbo);
     glBindBuffer(GL_ARRAY_BUFFER, app->screenSpaceVbo);
@@ -275,11 +279,11 @@ void Gui(App* app)
     ImGui::Begin("Camera");
     {
         auto& pos = app->camera.GetPosition();
-        if (ImGui::DragFloat3("Position", glm::value_ptr(pos)))
+        if (ImGui::DragFloat3("Position", glm::value_ptr(pos), 0.01f))
             app->camera.SetPosition(pos);
 
         auto& rot = app->camera.GetRotation();
-        if (ImGui::DragFloat3("Rotation", glm::value_ptr(rot)))
+        if (ImGui::DragFloat3("Rotation", glm::value_ptr(rot), 0.01f))
             app->camera.SetRotation(rot);
     }
     ImGui::End();
@@ -287,15 +291,15 @@ void Gui(App* app)
     ImGui::Begin("Model");
     {
         auto& pos = app->patrickModel->GetPosition();
-        if (ImGui::DragFloat3("Position", glm::value_ptr(app->patrickModel->GetPosition())))
+        if (ImGui::DragFloat3("Position", glm::value_ptr(app->patrickModel->GetPosition()), 0.01f))
             app->patrickModel->SetPosition(pos);
 
         auto& rot = app->patrickModel->GetRotation();
-        if (ImGui::DragFloat3("Rotation", glm::value_ptr(rot)))
+        if (ImGui::DragFloat3("Rotation", glm::value_ptr(rot), 0.01f))
             app->patrickModel->SetRotation(rot);
 
         auto& scale = app->patrickModel->GetScale();
-        if (ImGui::DragFloat3("Scale", glm::value_ptr(scale)))
+        if (ImGui::DragFloat3("Scale", glm::value_ptr(scale), 0.01f))
             app->patrickModel->SetScale(scale);
     }
     ImGui::End();
@@ -316,6 +320,7 @@ void Render(App* app)
     glClearColor(0.08, 0.08, 0.08, 1);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glViewport(0, 0, app->displaySize.x, app->displaySize.y);
+    app->camera.SetViewportSize(app->displaySize.x, app->displaySize.y);
 
     switch (app->mode)
     {
@@ -339,20 +344,13 @@ void Render(App* app)
         }
         case Mode_Model:
         {
-            //app->patrickVao->Bind();
+            app->patrickShader->Bind();
+            app->patrickShader->SetUniformMatrix4f("view", app->camera.GetView());
+            app->patrickShader->SetUniformMatrix4f("projection", app->camera.GetProjection());
+            app->patrickShader->SetUniformMatrix4f("model", app->patrickModel->GetTransform());
 
-            Program& p = app->programs[app->modelShaderIndex];
-            glUseProgram(p.handle);
-            //glUniform4dv(glGetUniformLocation(p.handle, "uTexture"), 0);
-
-            glUniformMatrix4fv(glGetUniformLocation(p.handle, "view"), 1, GL_FALSE, glm::value_ptr(app->camera.GetView()));
-            glUniformMatrix4fv(glGetUniformLocation(p.handle, "projection"), 1, GL_FALSE, glm::value_ptr(app->camera.GetProjection()));
-            glUniformMatrix4fv(glGetUniformLocation(p.handle, "model"), 1, GL_FALSE, glm::value_ptr(app->patrickModel->GetTransform()));
-            
-
-            glUniform1i(glGetUniformLocation(p.handle, "uTexture"), 0);
-            glActiveTexture(GL_TEXTURE0);
-            glBindTexture(GL_TEXTURE_2D, app->textures[app->diceTexIdx].handle);
+            app->patrickTexture->Bind(0);
+            app->patrickShader->SetUniform1i("uTexture", 0);
 
             app->patrickModel->Draw();
             break;
