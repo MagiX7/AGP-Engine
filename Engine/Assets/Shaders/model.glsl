@@ -12,6 +12,7 @@ layout(location = 3) in vec3 aTangents;
 layout(location = 4) in vec3 aBitangents;
 
 out vec2 vTexCoords;
+out vec3 vNormals;
 
 uniform mat4 model;
 uniform mat4 view;
@@ -20,10 +21,11 @@ uniform mat4 projection;
 void main()
 {
 	vec3 pos = aPosition;
-	pos.z *= -1.0;
+	//pos.z *= -1.0;
 
 	gl_Position = projection * view * model * vec4(pos, 1);
 	vTexCoords = aTexCoord;
+	vNormals = aNormals;
 }
 
 #elif defined(FRAGMENT) ///////////////////////////////////////////////
@@ -31,12 +33,15 @@ void main()
 layout(location = 0) uniform sampler2D uTexture;
 
 in vec2 vTexCoords;
+in vec3 vNormals;
 
 layout(location = 0) out vec4 fragColor;
 
 void main()
 {
-	fragColor = texture(uTexture, vTexCoords);
+	fragColor = vec4(1,0,0,1);
+	//fragColor = vec4(vTexCoords, 0, 1);
+	//fragColor = texture(uTexture, vTexCoords);
 }
 
 #endif

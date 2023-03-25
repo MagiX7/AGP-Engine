@@ -14,7 +14,7 @@ struct VertexBufferAttribute
 struct VertexBufferLayout
 {
 	std::vector<VertexBufferAttribute> attributes;
-	uint8_t stride;
+	uint8_t stride = 0;
 };
 
 class VertexBuffer

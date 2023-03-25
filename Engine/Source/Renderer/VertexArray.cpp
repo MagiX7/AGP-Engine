@@ -24,26 +24,26 @@ void VertexArray::Unbind()
 
 void VertexArray::SetVertexBuffer(const std::shared_ptr<VertexBuffer>& vertexBuffer)
 {
-    vbo = vertexBuffer;
-
     glBindVertexArray(id);
-    vbo->Bind();
+    vertexBuffer->Bind();
 
     int offset = 0;
     const VertexBufferLayout& layout = vertexBuffer->GetLayout();
-    for (int i = 0; i < layout.attributes.size(); ++i)
+    for (int i = 0; i < layout.attributes.size(); i++)
     {
         const VertexBufferAttribute& attribute = layout.attributes[i];
         glVertexAttribPointer(i,
             attribute.componentCount,
             GL_FLOAT,
-            attribute.normalized,
-            layout.stride,
-            (void*)(attribute.offset/**sizeof(GL_FLOAT)*/));
+            attribute.normalized ? GL_TRUE : GL_FALSE,
+            layout.stride, (const void*)(attribute.offset)
+            /*(void*)(offset * sizeof(GL_FLOAT))*/);
         glEnableVertexAttribArray(i);
 
         offset += attribute.componentCount;
     }
+
+    vbo = vertexBuffer;
 
     //glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(ScreenSpaceVertex), (void*)0);
     //glEnableVertexAttribArray(0);

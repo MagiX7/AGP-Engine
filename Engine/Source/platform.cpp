@@ -24,8 +24,8 @@
 #include <imgui_impl_opengl3.h>
 
 #define WINDOW_TITLE  "Advanced Graphics Programming"
-#define WINDOW_WIDTH  800
-#define WINDOW_HEIGHT 600
+#define WINDOW_WIDTH  1280
+#define WINDOW_HEIGHT 720
 
 #define GLOBAL_FRAME_ARENA_SIZE MB(16)
 u8* GlobalFrameArenaMemory = NULL;
@@ -238,6 +238,7 @@ int main()
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
+        //ImGui::DockSpaceOverViewport();
         Gui(&app);
         ImGui::Render();
 

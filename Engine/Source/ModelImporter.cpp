@@ -139,10 +139,11 @@ std::shared_ptr<Mesh> ModelImporter::ProcessMesh(aiMesh* mesh, const aiScene* sc
 
     VertexBufferLayout vertexBufferLayout = {};
     vertexBufferLayout.attributes.push_back(VertexBufferAttribute{ 0, 3, 0 });
+    vertexBufferLayout.stride += 3 * sizeof(float);
     if (hasNormals)
     {
         vertexBufferLayout.attributes.push_back(VertexBufferAttribute{ 1, 3, 3 * sizeof(float) });
-        vertexBufferLayout.stride = 6 * sizeof(float);
+        vertexBufferLayout.stride += 3 * sizeof(float);
     }
     if (hasTexCoords)
     {

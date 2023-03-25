@@ -210,7 +210,7 @@ void SetShaderUniforms(App* app, int shaderIndex)
 
 void Init(App* app)
 {
-    app->camera = Camera({ 0,5,2 }, 60.0f, 1280 / 720);
+    app->camera = Camera({ 0,2,5 }, { 0,0,0 }, 60.0f, 1280 / 720);
 
     app->texturedGeometryShaderIdx = LoadProgram(app, "Assets/Shaders/shaders.glsl", "TEXTURED_GEOMETRY");
     app->modelShaderIndex = LoadProgram(app, "Assets/Shaders/model.glsl", "MODEL");
@@ -218,6 +218,7 @@ void Init(App* app)
     SetShaderUniforms(app, app->texturedGeometryShaderIdx);
 
     // TODO: Patrick gives problems
+    //app->patrickModel = ModelImporter::ImportModel("Assets/Models/Sponza/Sponza.obj");
     app->patrickModel = ModelImporter::ImportModel("Assets/Models/Patrick/Patrick.obj");
 
 
@@ -271,34 +272,55 @@ void Gui(App* app)
     ImGui::Text("FPS: %f", 1.0f/app->deltaTime);
     ImGui::End();
 
+    ImGui::Begin("Camera");
+    {
+        auto& pos = app->camera.GetPosition();
+        if (ImGui::DragFloat3("Position", glm::value_ptr(pos)))
+            app->camera.SetPosition(pos);
+
+        auto& rot = app->camera.GetRotation();
+        if (ImGui::DragFloat3("Rotation", glm::value_ptr(rot)))
+            app->camera.SetRotation(rot);
+    }
+    ImGui::End();
+
+    ImGui::Begin("Model");
+    {
+        auto& pos = app->patrickModel->GetPosition();
+        if (ImGui::DragFloat3("Position", glm::value_ptr(app->patrickModel->GetPosition())))
+            app->patrickModel->SetPosition(pos);
+
+        auto& rot = app->patrickModel->GetRotation();
+        if (ImGui::DragFloat3("Rotation", glm::value_ptr(rot)))
+            app->patrickModel->SetRotation(rot);
+
+        auto& scale = app->patrickModel->GetScale();
+        if (ImGui::DragFloat3("Scale", glm::value_ptr(scale)))
+            app->patrickModel->SetScale(scale);
+    }
+    ImGui::End();
 
 }
 
 void Update(App* app)
 {
     // You can handle app->input keyboard/mouse here
+    //if (app->input.keys[Key::K_W] == BUTTON_PRESSED)
+    //{
+    //    
+    //}
 }
 
 void Render(App* app)
 {
-    glClearColor(0, 0, 0, 1);
+    glClearColor(0.08, 0.08, 0.08, 1);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glViewport(0, 0, app->displaySize.x, app->displaySize.y);
 
     switch (app->mode)
     {
         case Mode_TexturedQuad:
-        {
-            // TODO: Draw your textured quad here!
-            // - clear the framebuffer
-            // - set the viewport
-            // - set the blending state
-            // - bind the texture into unit 0
-            // - bind the program 
-            //   (...and make its texture sample from unit 0)
-            // - bind the vao
-            // - glDrawElements() !!!
-            
+        {            
             Program& shader = app->programs[app->texturedGeometryShaderIdx];
 
             glUseProgram(shader.handle);

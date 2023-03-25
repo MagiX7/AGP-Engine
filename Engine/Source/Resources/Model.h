@@ -90,6 +90,19 @@ public:
 
 	void Draw();
 
+	void SetPosition(const glm::vec3& pos) { position = pos; UpdateTransform(); }
+	inline const glm::vec3& GetPosition() const { return position; }
+	inline glm::vec3& GetPosition() { return position; }
+
+	void SetRotation(const glm::vec3& rot) { eulerAngles = rot; UpdateTransform(); }
+	inline const glm::vec3& GetRotation() const { return eulerAngles; }
+	inline glm::vec3& GetRotation() { return eulerAngles; }
+
+	void SetScale(const glm::vec3& sca) { scale = sca; UpdateTransform(); }
+	inline const glm::vec3& GetScale() const { return scale; }
+	inline glm::vec3& GetScale() { return scale; }
+
+	void UpdateTransform();
 	const glm::mat4& GetTransform();
 
 private:
