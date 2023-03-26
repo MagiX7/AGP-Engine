@@ -1,5 +1,7 @@
 #pragma once
 
+#include <glm/glm.hpp>
+
 #include <vector>
 #include <stdint.h>
 
@@ -53,5 +55,26 @@ public:
 private:
 	unsigned int id;
 	uint16_t count;
+};
+
+
+// TODO: Have some sort of struct like VertexBufferLayout
+class UniformBuffer
+{
+public:
+	UniformBuffer(int maxUniformBufferSize);
+	virtual ~UniformBuffer();
+
+	void Map(void* bufferData, uint32_t size);
+	void Map(const glm::mat4& viewProj, const glm::mat4& model);
+	
+	void Bind();
+	void Unbind();
+
+private:
+	unsigned int id;
+	int maxSize;
+	uint8_t* data;
+	uint32_t bufferHead = 0;
 };
 

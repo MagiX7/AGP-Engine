@@ -2,6 +2,7 @@
 #include "Vertex.h"
 
 #include <glad/glad.h>
+#include <glm/gtc/type_ptr.hpp>
 
 // Vertex Buffer ===========================================================
 //template <typename T>
@@ -60,3 +61,54 @@ void IndexBuffer::Unbind()
 }
 
 // Index Buffer ============================================================
+
+UniformBuffer::UniformBuffer(int maxUniformBufferSize) : maxSize(maxUniformBufferSize)
+{
+    glGenBuffers(1, &id);
+    glBindBuffer(GL_UNIFORM_BUFFER, id);
+    glBufferData(GL_UNIFORM_BUFFER, maxUniformBufferSize, NULL, GL_STREAM_DRAW);
+    glBindBuffer(GL_UNIFORM_BUFFER, 0);
+}
+
+UniformBuffer::~UniformBuffer()
+{
+}
+
+void UniformBuffer::Map(void* bufferData, uint32_t size)
+{
+    data = (uint8_t*)glMapBuffer(GL_UNIFORM_BUFFER, GL_WRITE_ONLY);
+    bufferHead = 0;
+
+    memcpy(data + bufferHead, bufferData, size);
+    bufferHead += size;
+
+    glUnmapBuffer(GL_UNIFORM_BUFFER);
+    glBindBuffer(GL_UNIFORM_BUFFER, 0);
+}
+
+void UniformBuffer::Map(const glm::mat4& viewProj, const glm::mat4& model)
+{
+    glBindBuffer(GL_UNIFORM_BUFFER, id);
+    data = (uint8_t*)glMapBuffer(GL_UNIFORM_BUFFER, GL_WRITE_ONLY);
+    bufferHead = 0;
+
+    memcpy(data + bufferHead, glm::value_ptr(viewProj), sizeof(glm::mat4));
+    bufferHead += sizeof(glm::mat4);
+
+    memcpy(data + bufferHead, glm::value_ptr(model), sizeof(glm::mat4));
+    bufferHead += sizeof(glm::mat4);
+
+    glUnmapBuffer(GL_UNIFORM_BUFFER);
+    glBindBuffer(GL_UNIFORM_BUFFER, 0);
+}
+
+void UniformBuffer::Bind()
+{
+    glBindBuffer(GL_UNIFORM_BUFFER, id);
+}
+
+void UniformBuffer::Unbind()
+{
+    glBindBuffer(GL_UNIFORM_BUFFER, 0);
+}
+

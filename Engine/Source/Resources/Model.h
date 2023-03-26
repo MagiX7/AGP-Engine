@@ -56,7 +56,7 @@ public:
 	Mesh(const std::string& name, std::vector<float> vertices, std::vector<uint32_t> indices, VertexBufferLayout layout);
 	virtual ~Mesh();
 
-	void Draw();
+	void Draw(const glm::mat4& viewProj, const glm::mat4& model);
 
 	void SetMaterial(std::shared_ptr<Material> mat) { material = mat; }
 		
@@ -69,6 +69,7 @@ private:
 	std::shared_ptr<VertexArray> vao;
 	std::shared_ptr<VertexBuffer> vbo;
 	std::shared_ptr<IndexBuffer> ibo;
+	std::shared_ptr<UniformBuffer> ubo;
 	std::shared_ptr<Material> material;
 
 	std::vector<float> vertices;
@@ -81,15 +82,17 @@ class Model
 public:
 	Model(const std::string& name);
 	virtual ~Model();
+	void Draw(const glm::mat4& viewProj);
 
 	inline const std::vector<std::shared_ptr<Mesh>>& GetMeshes() { return meshes; }
 
-	inline const std::vector<Material>& GetMaterials() { return materials; }
-	inline Material& GetFirstMaterial() { return materials[0]; }
+	inline void AddMaterial(const std::shared_ptr<Material>& material) { materials.push_back(material); }
+
+	inline const std::vector<std::shared_ptr<Material>>& GetMaterials() { return materials; }
+	inline std::shared_ptr<Material> GetFirstMaterial() { return materials[0]; }
 
 	inline void AddMesh(std::shared_ptr<Mesh> mesh) { meshes.push_back(mesh); }
 
-	void Draw();
 
 	void SetPosition(const glm::vec3& pos) { position = pos; UpdateTransform(); }
 	inline const glm::vec3& GetPosition() const { return position; }
@@ -109,7 +112,7 @@ public:
 private:
 	std::string name;
 	std::vector<std::shared_ptr<Mesh>> meshes;
-	std::vector<Material> materials;
+	std::vector<std::shared_ptr<Material>> materials;
 
 	glm::mat4 transform;
 	glm::vec3 position;

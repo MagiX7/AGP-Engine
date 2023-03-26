@@ -3,11 +3,18 @@
 #include <glad/glad.h>
 #include <stb_image.h>
 
+#include <iostream>
+
 Texture2D::Texture2D(const std::string& filePath) : path(filePath)
 {
     int w, h;
     stbi_set_flip_vertically_on_load(1);
     stbi_uc* data = stbi_load(path.c_str(), &w, &h, &channels, 0);
+
+    if (!data)
+    {
+        std::cout << "Texture with path " << path << " couldn't be found" << std::endl;
+    }
 
     internalFormat = dataFormat = 0;
     if (channels == 4)

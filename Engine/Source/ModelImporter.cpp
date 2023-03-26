@@ -47,12 +47,15 @@ std::shared_ptr<Model> ModelImporter::ImportModel(std::string path)
     std::string name = path.substr(path.find_last_of("/") + 1);
     std::shared_ptr<Model> model = std::make_shared<Model>(name);
 
-    std::shared_ptr<Material> material = std::make_shared<Material>("Default Material");
 
     std::string directory = path.substr(0, path.find_last_of("/") + 1);
 
     for (unsigned int i = 0; i < scene->mNumMaterials; ++i)
+    {
+        std::shared_ptr<Material> material = std::make_shared<Material>("");
         ProcessMaterial(scene->mMaterials[i], *material, directory);
+        model->AddMaterial(material);
+    }
 
     ProcessNode(scene->mRootNode, scene, *model);
 
@@ -66,7 +69,7 @@ void ModelImporter::ProcessNode(aiNode* node, const aiScene* scene, Model& model
     for (unsigned int i = 0; i < node->mNumMeshes; i++)
     {
         aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
-        model.AddMesh(ProcessMesh(mesh, scene));
+        model.AddMesh(ProcessMesh(mesh, scene, model));
         //model.AddMesh(ProcessSubMesh(mesh, scene));
         //model.meshes.push_back(ProcessMesh(mesh, scene));
     }
@@ -77,7 +80,7 @@ void ModelImporter::ProcessNode(aiNode* node, const aiScene* scene, Model& model
     }
 }
 
-std::shared_ptr<Mesh> ModelImporter::ProcessMesh(aiMesh* mesh, const aiScene* scene)
+std::shared_ptr<Mesh> ModelImporter::ProcessMesh(aiMesh* mesh, const aiScene* scene, Model& model)
 {
     std::vector<float> vertices;
     std::vector<uint32_t> indices;
@@ -169,6 +172,7 @@ std::shared_ptr<Mesh> ModelImporter::ProcessMesh(aiMesh* mesh, const aiScene* sc
     }
 
     std::shared_ptr<Mesh> myMesh = std::make_shared<Mesh>(mesh->mName.C_Str(), vertices, indices, vertexBufferLayout);
+    myMesh->SetMaterial(model.GetMaterials()[mesh->mMaterialIndex]);
     return myMesh;
 
     //Submesh submesh = {};
@@ -203,31 +207,62 @@ void ModelImporter::ProcessMaterial(aiMaterial* material, Material& myMaterial, 
     if (material->GetTextureCount(aiTextureType_DIFFUSE) > 0)
     {
         material->GetTexture(aiTextureType_DIFFUSE, 0, &aiFilename);
-        std::string filepath = directory + aiFilename.C_Str();
+
+        std::string fileName = aiFilename.C_Str();
+
+        if (size_t loc = fileName.find("\\"))
+            fileName.replace(loc, loc + 2, "/");
+
+
+        std::string filepath = directory + fileName;
         myMaterial.SetAlbedoMap(std::make_shared<Texture2D>(filepath));
     }
     if (material->GetTextureCount(aiTextureType_EMISSIVE) > 0)
     {
         material->GetTexture(aiTextureType_EMISSIVE, 0, &aiFilename);
-        std::string filepath = directory + aiFilename.C_Str();
+        
+        std::string fileName = aiFilename.C_Str();
+
+        if (size_t loc = fileName.find("\\"))
+            fileName.replace(loc, loc + 2, "/");
+
+        std::string filepath = directory + fileName;
         myMaterial.SetEmissiveMap(std::make_shared<Texture2D>(filepath));
     }
     if (material->GetTextureCount(aiTextureType_SPECULAR) > 0)
     {
         material->GetTexture(aiTextureType_SPECULAR, 0, &aiFilename);
-        std::string filepath = directory + aiFilename.C_Str();
+
+        std::string fileName = aiFilename.C_Str();
+
+        if (size_t loc = fileName.find("\\"))
+            fileName.replace(loc, loc + 2, "/");
+
+        std::string filepath = directory + fileName;
         myMaterial.SetSpecularMap(std::make_shared<Texture2D>(filepath));
     }
     if (material->GetTextureCount(aiTextureType_NORMALS) > 0)
     {
         material->GetTexture(aiTextureType_NORMALS, 0, &aiFilename);
-        std::string filepath = directory + aiFilename.C_Str();
+
+        std::string fileName = aiFilename.C_Str();
+
+        if (size_t loc = fileName.find("\\"))
+            fileName.replace(loc, loc + 2, "/");
+
+        std::string filepath = directory + fileName;
         myMaterial.SetNormalMap(std::make_shared<Texture2D>(filepath));
     }
     if (material->GetTextureCount(aiTextureType_HEIGHT) > 0)
     {
         material->GetTexture(aiTextureType_HEIGHT, 0, &aiFilename);
-        std::string filepath = directory + aiFilename.C_Str();
+
+        std::string fileName = aiFilename.C_Str();
+
+        if (size_t loc = fileName.find("\\"))
+            fileName.replace(loc, loc + 2, "/");
+
+        std::string filepath = directory + fileName;
         myMaterial.SetBumpMap(std::make_shared<Texture2D>(filepath));
     }
 

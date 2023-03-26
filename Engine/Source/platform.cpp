@@ -23,6 +23,8 @@
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
 
+#include <filesystem>
+
 #define WINDOW_TITLE  "Advanced Graphics Programming"
 #define WINDOW_WIDTH  1280
 #define WINDOW_HEIGHT 720
@@ -38,27 +40,29 @@ void OnGlfwError(int errorCode, const char *errorMessage)
 
 void OnGlfwMouseMoveEvent(GLFWwindow* window, double xpos, double ypos)
 {
-    App* app = (App*)glfwGetWindowUserPointer(window);
-    app->input.mouseDelta.x = xpos - app->input.mousePos.x;
-    app->input.mouseDelta.y = ypos - app->input.mousePos.y;
-    app->input.mousePos.x = xpos;
-    app->input.mousePos.y = ypos;
+    Application* app = (Application*)glfwGetWindowUserPointer(window);
+    Input& input = app->GetInstance().GetInput();
+
+    input.mouseDelta.x = xpos - input.mousePos.x;
+    input.mouseDelta.y = ypos - input.mousePos.y;
+    input.mousePos.x = xpos;
+    input.mousePos.y = ypos;
 }
 
 void OnGlfwMouseEvent(GLFWwindow* window, int button, int event, int modifiers)
 {
-    App* app = (App*)glfwGetWindowUserPointer(window);
+    Application* app = (Application*)glfwGetWindowUserPointer(window);
 
     switch (event) {
         case GLFW_PRESS:
             switch (button) {
-                case GLFW_MOUSE_BUTTON_RIGHT: app->input.mouseButtons[RIGHT] = BUTTON_PRESS; break;
-                case GLFW_MOUSE_BUTTON_LEFT:  app->input.mouseButtons[LEFT]  = BUTTON_PRESS; break;
+                case GLFW_MOUSE_BUTTON_RIGHT: app->GetInstance().GetInput().mouseButtons[RIGHT] = BUTTON_PRESS; break;
+                case GLFW_MOUSE_BUTTON_LEFT:  app->GetInstance().GetInput().mouseButtons[LEFT]  = BUTTON_PRESS; break;
             } break;
         case GLFW_RELEASE:
             switch (button) {
-                case GLFW_MOUSE_BUTTON_RIGHT: app->input.mouseButtons[RIGHT] = BUTTON_RELEASE; break;
-                case GLFW_MOUSE_BUTTON_LEFT:  app->input.mouseButtons[LEFT]  = BUTTON_RELEASE; break;
+                case GLFW_MOUSE_BUTTON_RIGHT: app->GetInstance().GetInput().mouseButtons[RIGHT] = BUTTON_RELEASE; break;
+                case GLFW_MOUSE_BUTTON_LEFT:  app->GetInstance().GetInput().mouseButtons[LEFT]  = BUTTON_RELEASE; break;
             } break;
     }
 }
@@ -90,10 +94,10 @@ void OnGlfwKeyboardEvent(GLFWwindow* window, int key, int scancode, int action, 
         case GLFW_KEY_ENTER:  key = K_ENTER; break;
     }
 
-    App* app = (App*)glfwGetWindowUserPointer(window);
+    Application* app = (Application*)glfwGetWindowUserPointer(window);
     switch (action) {
-        case GLFW_PRESS:   app->input.keys[key] = BUTTON_PRESS; break;
-        case GLFW_RELEASE: app->input.keys[key] = BUTTON_RELEASE; break;
+        case GLFW_PRESS:   app->GetInput().keys[key] = BUTTON_PRESS; break;
+        case GLFW_RELEASE: app->GetInput().keys[key] = BUTTON_RELEASE; break;
     }
 }
 
@@ -104,24 +108,24 @@ void OnGlfwCharEvent(GLFWwindow* window, unsigned int character)
 
 void OnGlfwResizeFramebuffer(GLFWwindow* window, int width, int height)
 {
-    App* app = (App*)glfwGetWindowUserPointer(window);
-    app->displaySize = vec2(width, height);
+    Application* app = (Application*)glfwGetWindowUserPointer(window);
+    app->GetInstance().SetDisplaySize(glm::ivec2(width, height));
 }
 
 void OnGlfwCloseWindow(GLFWwindow* window)
 {
-    App* app = (App*)glfwGetWindowUserPointer(window);
-    app->isRunning = false;
+    Application* app = (Application*)glfwGetWindowUserPointer(window);
+    app->GetInstance().isRunning = false;
 }
 
 int main()
 {
-    App app         = {};
-    app.deltaTime   = 1.0f/60.0f;
-    app.displaySize = ivec2(WINDOW_WIDTH, WINDOW_HEIGHT);
-    app.isRunning   = true;
+    Application* app = new Application();
+    app->GetInstance().SetDeltaTime(1.0f / 60.0f);
+    app->GetInstance().SetDisplaySize(ivec2(WINDOW_WIDTH, WINDOW_HEIGHT));
+    app->GetInstance().isRunning = true;
 
-		glfwSetErrorCallback(OnGlfwError);
+	glfwSetErrorCallback(OnGlfwError);
 
     if (!glfwInit())
     {
@@ -141,7 +145,7 @@ int main()
         return -1;
     }
 
-    glfwSetWindowUserPointer(window, &app);
+    glfwSetWindowUserPointer(window, &app->GetInstance());
 
     glfwSetMouseButtonCallback(window, OnGlfwMouseEvent);
     glfwSetCursorPosCallback(window, OnGlfwMouseMoveEvent);
@@ -199,9 +203,9 @@ int main()
 
     GlobalFrameArenaMemory = (u8*)malloc(GLOBAL_FRAME_ARENA_SIZE);
 
-    Init(&app);
+    app->GetInstance().Init();
 
-    while (app.isRunning)
+    while (app->GetInstance().isRunning)
     {
         // Tell GLFW to call platform callbacks
         glfwPollEvents();
@@ -209,37 +213,37 @@ int main()
         // Clear input state if required by ImGui
         if (ImGui::GetIO().WantCaptureKeyboard)
             for (u32 i = 0; i < KEY_COUNT; ++i)
-                app.input.keys[i] = BUTTON_IDLE;
+                app->GetInstance().GetInput().keys[i] = BUTTON_IDLE;
 
         if (ImGui::GetIO().WantCaptureMouse)
             for (u32 i = 0; i < MOUSE_BUTTON_COUNT; ++i)
-                app.input.mouseButtons[i] = BUTTON_IDLE;
+                app->GetInstance().GetInput().mouseButtons[i] = BUTTON_IDLE;
 
         // Update
-        Update(&app);
+        app->GetInstance().Update();
 
         // Transition input key/button states
         if (!ImGui::GetIO().WantCaptureKeyboard)
             for (u32 i = 0; i < KEY_COUNT; ++i)
-                if      (app.input.keys[i] == BUTTON_PRESS)   app.input.keys[i] = BUTTON_PRESSED;
-                else if (app.input.keys[i] == BUTTON_RELEASE) app.input.keys[i] = BUTTON_IDLE;
+                if      (app->GetInstance().GetInput().keys[i] == BUTTON_PRESS)   app->GetInstance().GetInput().keys[i] = BUTTON_PRESSED;
+                else if (app->GetInstance().GetInput().keys[i] == BUTTON_RELEASE) app->GetInstance().GetInput().keys[i] = BUTTON_IDLE;
 
         if (!ImGui::GetIO().WantCaptureMouse)
             for (u32 i = 0; i < MOUSE_BUTTON_COUNT; ++i)
-                if      (app.input.mouseButtons[i] == BUTTON_PRESS)   app.input.mouseButtons[i] = BUTTON_PRESSED;
-                else if (app.input.mouseButtons[i] == BUTTON_RELEASE) app.input.mouseButtons[i] = BUTTON_IDLE;
+                if      (app->GetInstance().GetInput().mouseButtons[i] == BUTTON_PRESS)   app->GetInstance().GetInput().mouseButtons[i] = BUTTON_PRESSED;
+                else if (app->GetInstance().GetInput().mouseButtons[i] == BUTTON_RELEASE) app->GetInstance().GetInput().mouseButtons[i] = BUTTON_IDLE;
 
-        app.input.mouseDelta = glm::vec2(0.0f, 0.0f);
+        app->GetInstance().GetInput().mouseDelta = glm::vec2(0.0f, 0.0f);
 
         // Render
-        Render(&app);
+        app->GetInstance().Render();
 
         // ImGui
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
         //ImGui::DockSpaceOverViewport();
-        Gui(&app);
+        app->GetInstance().OnImGuiRender();
         ImGui::Render();
 
         // ImGui Render
@@ -256,7 +260,7 @@ int main()
 
         // Frame time
         f64 currentFrameTime = glfwGetTime();
-        app.deltaTime = (f32)(currentFrameTime - lastFrameTime);
+        app->GetInstance().SetDeltaTime((f32)(currentFrameTime - lastFrameTime));
         lastFrameTime = currentFrameTime;
 
         // Reset frame allocator
@@ -349,6 +353,14 @@ String GetDirectoryPart(String path)
               PushChar(0);
     return str;
 }
+
+//std::string NormalizePath(const std::string& path)
+//{
+//    std::filesystem::path path(path);
+//    std::filesystem::path canonicalPath = std::filesystem::weakly_canonical(path);
+//    std::string npath = canonicalPath.make_preferred().string();
+//    return npath;
+//}
 
 String ReadTextFile(const char* filepath)
 {

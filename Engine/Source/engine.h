@@ -64,11 +64,39 @@ const uint16_t quadIndices[] =
 };
 
 
-struct App
+class Application
 {
+public:
+    Application();
+    virtual ~Application();
+
+    inline static Application& GetInstance() { return *instance; }
+
+    void Init();
+    void Update();
+    void Render();
+    void OnImGuiRender();
+
+    inline float GetDeltaTime() const { return deltaTime; }
+    inline void SetDeltaTime(float dt) { deltaTime = dt; }
+    inline const Input& GetInput() const { return input; }
+    inline Input& GetInput() { return input; }
+    inline const glm::ivec2& GetDisplaySize() const { return displaySize; }
+    inline void SetDisplaySize(const glm::ivec2& size) { displaySize = size; }
+
+private:
+    Application(const Application&);
+    Application& operator=(Application&) {}
+
+
+public:
+    bool isRunning;
+
+private:
+    static Application* instance;
+
     // Loop
     f32  deltaTime;
-    bool isRunning;
 
     // Input
     Input input;
@@ -86,16 +114,21 @@ struct App
     std::vector<Program>  programs;
 
     // program indices
-    u32 texturedGeometryShaderIdx;
+    std::shared_ptr<Shader> texturedGeometryShader;
     u32 modelShaderIndex;
 
     // texture indices
     u32 diceTexIdx;
+    std::shared_ptr<Texture2D> diceTex;
     u32 whiteTexIdx;
     u32 blackTexIdx;
     u32 normalTexIdx;
     u32 magentaTexIdx;
 
+
+    // Buffers
+    int maxUniformBufferSize;
+    int uniformBlockAlignment;
 
     // Models
     std::shared_ptr<Model> patrickModel;
@@ -123,11 +156,11 @@ struct App
 
 };
 
-void Init(App* app);
+//void Init(Application* app);
 
-void Gui(App* app);
+//void Gui(Application* app);
 
-void Update(App* app);
+//void Update(Application* app);
 
-void Render(App* app);
+//void Render(Application* app);
 
