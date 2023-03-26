@@ -403,7 +403,12 @@ void Application::Init()
 
     //patrickModel = ModelImporter::ImportModel("Assets/Models/Cerberus 2/Cerberus_LP.FBX");
     patrickModel = ModelImporter::ImportModel("Assets/Models/Cerberus/Cerberus.fbx");
+    //patrickModel = ModelImporter::ImportModel("Assets/Models/Patrick/Patrick.obj");
 
+    entities.emplace_back(Entity("Patrick 1", patrickModel));
+    entities.emplace_back(Entity("Patrick 2", patrickModel));
+    entities.emplace_back(Entity("Patrick 3", patrickModel));
+    
 
     glGetIntegerv(GL_MAX_UNIFORM_BLOCK_SIZE, &maxUniformBufferSize);
     glGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT, &uniformBlockAlignment);
@@ -454,11 +459,22 @@ void Application::Update()
     //{
     //    
     //}
-    sceneUbo->Map();
-    sceneUbo->PushMatrix4f(patrickModel->GetTransform());
-    sceneUbo->PushMatrix4f(camera.GetViewProj());
-    sceneUbo->Unmap();
 
+    sceneUbo->Map();
+
+    for (auto& entity : entities)
+    {
+        sceneUbo->AlignHead(uniformBlockAlignment);
+
+        entity.localParamsOffset = sceneUbo->GetHead();
+        sceneUbo->PushMatrix4f(entity.GetTransform());
+        sceneUbo->PushMatrix4f(camera.GetViewProj() * entity.GetTransform());
+
+        entity.localParamsSize = sceneUbo->GetHead() - entity.localParamsOffset;        
+
+    }
+
+    sceneUbo->Unmap();
 
 }
 
@@ -508,8 +524,13 @@ void Application::Render()
             //sceneUbo->PushMatrix4f(camera.GetViewProj());
             //sceneUbo->Unmap();
 
-            sceneUbo->BindRange(1, 0, 2 * sizeof(glm::mat4));
-            patrickModel->Draw(camera.GetProjection() * camera.GetView());
+            for (auto& entity : entities)
+            {
+                sceneUbo->BindRange(1, entity.localParamsOffset, entity.localParamsSize);
+                //sceneUbo->BindRange(1, 0, 2 * sizeof(glm::mat4));
+                entity.GetModel()->Draw();
+            }
+
             break;
         }
 
@@ -548,35 +569,61 @@ void Application::OnImGuiRender()
     }
     ImGui::End();
 
-    ImGui::Begin("Model");
+    ImGui::Begin("Hierarchy");
     {
-        auto& pos = patrickModel->GetPosition();
-        if (ImGui::DragFloat3("Position", glm::value_ptr(patrickModel->GetPosition()), 0.01f))
-            patrickModel->SetPosition(pos);
-
-        auto& rot = patrickModel->GetRotation();
-        if (ImGui::DragFloat3("Rotation", glm::value_ptr(rot), 0.01f))
-            patrickModel->SetRotation(rot);
-
-        auto& scale = patrickModel->GetScale();
-        if (ImGui::DragFloat3("Scale", glm::value_ptr(scale), 0.01f))
-            patrickModel->SetScale(scale);
-
-        ImGui::Separator();
-        ImGui::Separator();
-
-        if (ImGui::TreeNodeEx("Materials"))
+        bool selected = false;
+        for (auto& entity : entities)
         {
-            for (auto mat : patrickModel->GetMaterials())
+            if (ImGui::Selectable(entity.GetName().c_str(), &selected))
             {
-                if (ImGui::Button(mat->GetName().c_str()))
-                {
-
-                }
+                currentEntity = &entity;
             }
-            ImGui::TreePop();
+
+
+            /*if (ImGui::TreeNodeEx(entity.GetName().c_str()))
+            {
+                
+
+                ImGui::TreePop();
+            }*/
+
         }
 
+    }
+    ImGui::End();
+
+    ImGui::Begin("Model");
+    {
+        if (currentEntity)
+        {
+
+            auto& pos = currentEntity->GetPosition();
+            if (ImGui::DragFloat3("Position", glm::value_ptr(pos), 0.01f))
+                currentEntity->SetPosition(pos);
+
+            auto& rot = currentEntity->GetRotation();
+            if (ImGui::DragFloat3("Rotation", glm::value_ptr(rot), 0.01f))
+                currentEntity->SetRotation(rot);
+
+            auto& scale = currentEntity->GetScale();
+            if (ImGui::DragFloat3("Scale", glm::value_ptr(scale), 0.01f))
+                currentEntity->SetScale(scale);
+
+            ImGui::Separator();
+            ImGui::Separator();
+
+            if (ImGui::TreeNodeEx("Materials"))
+            {
+                for (auto mat : currentEntity->GetModel()->GetMaterials())
+                {
+                    if (ImGui::Button(mat->GetName().c_str()))
+                    {
+
+                    }
+                }
+                ImGui::TreePop();
+            }
+        }
     }
     ImGui::End();
 }

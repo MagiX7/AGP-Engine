@@ -158,6 +158,7 @@
     <ClCompile Include="Dependencies\imgui-docking\imgui_widgets.cpp" />
     <ClCompile Include="Dependencies\stb\stb.cpp" />
     <ClCompile Include="Source\engine.cpp" />
+    <ClCompile Include="Source\Entity.cpp" />
     <ClCompile Include="Source\ModelImporter.cpp" />
     <ClCompile Include="Source\OldModelImporter.cpp" />
     <ClCompile Include="Source\platform.cpp" />
@@ -185,6 +186,7 @@
     <ClInclude Include="Dependencies\stb\stb_image.h" />
     <ClInclude Include="Dependencies\stb\stb_image_write.h" />
     <ClInclude Include="Source\engine.h" />
+    <ClInclude Include="Source\Entity.h" />
     <ClInclude Include="Source\ModelImporter.h" />
     <ClInclude Include="Source\Renderer\Buffer.h" />
     <ClInclude Include="Source\Renderer\Camera.h" />

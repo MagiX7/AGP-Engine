@@ -38,14 +38,14 @@ Mesh::~Mesh()
 	indices.clear();
 }
 
-void Mesh::Draw(const glm::mat4& viewProj, const glm::mat4& model)
+void Mesh::Draw()
 {
 	//if (!material)
 	//{
 	//	std::cout << "Assign a material to mesh " << name << std::endl;
 	//	return;
 	//}
-	material->Bind(viewProj, model);
+	material->Bind();
 
 	vao->Bind();
 	ibo->Bind();
@@ -59,9 +59,8 @@ void Mesh::Draw(const glm::mat4& viewProj, const glm::mat4& model)
 // ==============================================================
 
 Model::Model(const std::string& modelName)
-	: name(modelName), position(glm::vec3(0, 0, 0)), eulerAngles(glm::vec3(0.0f)), scale(glm::vec3(1.0f))
+	: name(modelName)
 {
-	UpdateTransform();
 }
 
 Model::~Model()
@@ -69,21 +68,11 @@ Model::~Model()
 	meshes.clear();
 }
 
-void Model::Draw(const glm::mat4& viewProj)
+void Model::Draw()
 {
 	for (auto mesh : meshes)
-		mesh->Draw(viewProj, transform);
+		mesh->Draw();
 }
 
-void Model::UpdateTransform()
-{
-	transform = glm::translate(glm::mat4(1.0), position)
-		* glm::eulerAngleXYZ(eulerAngles.x, eulerAngles.y, eulerAngles.z)
-		* glm::scale(glm::mat4(1.0f), scale);
-}
 
-const glm::mat4& Model::GetTransform()
-{
-	return transform;
-}
 

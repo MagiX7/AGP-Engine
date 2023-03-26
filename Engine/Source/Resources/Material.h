@@ -14,7 +14,7 @@ public:
 	Material(std::string materialName);
 	virtual ~Material();
 
-	void Bind(const glm::mat4& view, const glm::mat4& projection);
+	void Bind();
 	void Unbind();
 
 	inline void SetName(const std::string& value) { name = value; }

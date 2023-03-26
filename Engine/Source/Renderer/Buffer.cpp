@@ -62,7 +62,7 @@ void IndexBuffer::Unbind()
 // Index Buffer ============================================================
 
 UniformBuffer::UniformBuffer(int maxUniformBufferSize, int maxUniformBlockAlignment)
-    : maxSize(maxUniformBufferSize), maxAlignment(maxUniformBlockAlignment)
+    : maxBufferSize(maxUniformBufferSize), uniformBlockAlignment(maxUniformBlockAlignment)
 {
     glGenBuffers(1, &id);
     glBindBuffer(GL_UNIFORM_BUFFER, id);
@@ -74,47 +74,9 @@ UniformBuffer::~UniformBuffer()
 {
 }
 
-//template<typename T>
-//void UniformBuffer::Map(T bufferData)
+//void UniformBuffer::AlignHead()
 //{
-//    glBindBuffer(GL_UNIFORM_BUFFER, id);
-//    data = (uint8_t*)glMapBuffer(GL_UNIFORM_BUFFER, GL_WRITE_ONLY);
-//    bufferHead = 0;
-//
-//    memcpy(data + bufferHead, bufferData, sizeof(T));
-//    bufferHead += sizeof(T);
-//
-//    glUnmapBuffer(GL_UNIFORM_BUFFER);
-//    glBindBuffer(GL_UNIFORM_BUFFER, 0);
-//}
-
-//void UniformBuffer::Map(void* bufferData, uint32_t size)
-//{
-//    glBindBuffer(GL_UNIFORM_BUFFER, id);
-//    data = (uint8_t*)glMapBuffer(GL_UNIFORM_BUFFER, GL_WRITE_ONLY);
-//    bufferHead = 0;
-//
-//    memcpy(data + bufferHead, bufferData, size);
-//    bufferHead += size;
-//
-//    glUnmapBuffer(GL_UNIFORM_BUFFER);
-//    glBindBuffer(GL_UNIFORM_BUFFER, 0);
-//}
-//
-//void UniformBuffer::Map(const glm::mat4& viewProj, const glm::mat4& model)
-//{
-//    glBindBuffer(GL_UNIFORM_BUFFER, id);
-//    data = (uint8_t*)glMapBuffer(GL_UNIFORM_BUFFER, GL_WRITE_ONLY);
-//    bufferHead = 0;
-//
-//    memcpy(data + bufferHead, glm::value_ptr(viewProj), sizeof(glm::mat4));
-//    bufferHead += sizeof(glm::mat4);
-//
-//    memcpy(data + bufferHead, glm::value_ptr(model), sizeof(glm::mat4));
-//    bufferHead += sizeof(glm::mat4);
-//
-//    glUnmapBuffer(GL_UNIFORM_BUFFER);
-//    glBindBuffer(GL_UNIFORM_BUFFER, 0);
+//    bufferHead = Align(bufferHead, uniformBlockAlignment);
 //}
 
 void UniformBuffer::Bind()

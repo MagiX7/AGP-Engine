@@ -67,25 +67,8 @@ public:
 	UniformBuffer(int maxUniformBufferSize, int maxUniformBlockAlignment);
 	virtual ~UniformBuffer();
 
-	//template<typename T>
-	//void Map(const float* bufferData)
-	//{
-	//	glBindBuffer(GL_UNIFORM_BUFFER, id);
-	//	data = (uint8_t*)glMapBuffer(GL_UNIFORM_BUFFER, GL_WRITE_ONLY);
-	//	bufferHead = 0;
+	//void AlignHead();
 
-	//	memcpy(data + bufferHead, &bufferData, sizeof(T));
-	//	bufferHead += sizeof(T);
-
-	//	glUnmapBuffer(GL_UNIFORM_BUFFER);
-	//	glBindBuffer(GL_UNIFORM_BUFFER, 0);
-
-	//	blockOffset = 0;
-	//	blockSize = bufferHead;
-	//}
-	//void Map(void* bufferData, uint32_t size);
-	//void Map(const glm::mat4& viewProj, const glm::mat4& model);
-	
 	void Bind();
 	void BindRange(uint32_t slot, uint32_t offset, uint32_t size);
 	void Unbind();
@@ -100,16 +83,20 @@ public:
 	void PushMatrix3f(const glm::mat3& value);
 	void PushMatrix4f(const glm::mat4& value);
 
+	uint32_t GetHead() { return bufferHead; }
+
+	void AlignHead(uint32_t alignment);
+
 private:
 	void PushAlignedData(const void* data, uint32_t size, uint32_t alignment);
-	void AlignHead(uint32_t alignment);
 	bool IsPowerOf2(uint32_t value);
 	uint32_t Align(uint32_t value, uint32_t alignment);
 
+
 private:
 	unsigned int id;
-	int maxSize;
-	int maxAlignment;
+	int maxBufferSize;
+	int uniformBlockAlignment;
 	uint8_t* data;
 	uint32_t bufferHead = 0;
 

@@ -5,9 +5,9 @@
 #pragma once
 
 #include "platform.h"
-#include "Resources/Model.h"
 #include "Resources/Material.h"
 #include "Renderer/Camera.h"
+#include "Entity.h"
 
 #include <glad/glad.h>
 
@@ -139,6 +139,8 @@ private:
     std::shared_ptr<Texture2D> patrickTexture;
 
     std::shared_ptr<UniformBuffer> sceneUbo;
+    std::vector<Entity> entities;
+    Entity* currentEntity = nullptr;
 
     Camera camera;
 

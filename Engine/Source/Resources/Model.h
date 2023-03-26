@@ -56,7 +56,7 @@ public:
 	Mesh(const std::string& name, std::vector<float> vertices, std::vector<uint32_t> indices, VertexBufferLayout layout);
 	virtual ~Mesh();
 
-	void Draw(const glm::mat4& viewProj, const glm::mat4& model);
+	void Draw();
 
 	void SetMaterial(std::shared_ptr<Material> mat) { material = mat; }
 		
@@ -82,7 +82,7 @@ class Model
 public:
 	Model(const std::string& name);
 	virtual ~Model();
-	void Draw(const glm::mat4& viewProj);
+	void Draw();
 
 	inline const std::vector<std::shared_ptr<Mesh>>& GetMeshes() { return meshes; }
 
@@ -94,28 +94,28 @@ public:
 	inline void AddMesh(std::shared_ptr<Mesh> mesh) { meshes.push_back(mesh); }
 
 
-	void SetPosition(const glm::vec3& pos) { position = pos; UpdateTransform(); }
-	inline const glm::vec3& GetPosition() const { return position; }
-	inline glm::vec3& GetPosition() { return position; }
+	//void SetPosition(const glm::vec3& pos) { position = pos; UpdateTransform(); }
+	//inline const glm::vec3& GetPosition() const { return position; }
+	//inline glm::vec3& GetPosition() { return position; }
 
-	void SetRotation(const glm::vec3& rot) { eulerAngles = rot; UpdateTransform(); }
-	inline const glm::vec3& GetRotation() const { return eulerAngles; }
-	inline glm::vec3& GetRotation() { return eulerAngles; }
+	//void SetRotation(const glm::vec3& rot) { eulerAngles = rot; UpdateTransform(); }
+	//inline const glm::vec3& GetRotation() const { return eulerAngles; }
+	//inline glm::vec3& GetRotation() { return eulerAngles; }
 
-	void SetScale(const glm::vec3& sca) { scale = sca; UpdateTransform(); }
-	inline const glm::vec3& GetScale() const { return scale; }
-	inline glm::vec3& GetScale() { return scale; }
+	//void SetScale(const glm::vec3& sca) { scale = sca; UpdateTransform(); }
+	//inline const glm::vec3& GetScale() const { return scale; }
+	//inline glm::vec3& GetScale() { return scale; }
 
-	void UpdateTransform();
-	const glm::mat4& GetTransform();
+	//void UpdateTransform();
+	//const glm::mat4& GetTransform();
 
 private:
 	std::string name;
 	std::vector<std::shared_ptr<Mesh>> meshes;
 	std::vector<std::shared_ptr<Material>> materials;
 
-	glm::mat4 transform;
-	glm::vec3 position;
-	glm::vec3 eulerAngles;
-	glm::vec3 scale;
+	//glm::mat4 transform;
+	//glm::vec3 position;
+	//glm::vec3 eulerAngles;
+	//glm::vec3 scale;
 };

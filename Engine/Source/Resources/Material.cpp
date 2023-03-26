@@ -11,11 +11,9 @@ Material::~Material()
 {
 }
 
-void Material::Bind(const glm::mat4& viewProjection, const glm::mat4& model)
+void Material::Bind()
 {
 	shader->Bind();
-	//shader->SetUniformMatrix4f("viewProj", viewProjection);
-	//shader->SetUniformMatrix4f("model", model);
 
 	shader->SetUniformVec3f("albedoColor", albedoColor);
 	

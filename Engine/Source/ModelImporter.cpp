@@ -215,8 +215,8 @@ void ModelImporter::ProcessMaterial(aiMaterial* material, Material& myMaterial, 
         material->GetTexture(aiTextureType_DIFFUSE, 0, &aiFilename);
 
         std::string fileName = aiFilename.C_Str();
-
-        if (size_t loc = fileName.find("\\"))
+        size_t loc = fileName.find("\\");
+        if (loc != std::string::npos)
             fileName.replace(loc, loc + 2, "/");
 
 
@@ -229,7 +229,8 @@ void ModelImporter::ProcessMaterial(aiMaterial* material, Material& myMaterial, 
         
         std::string fileName = aiFilename.C_Str();
 
-        if (size_t loc = fileName.find("\\"))
+        size_t loc = fileName.find("\\");
+        if (loc != std::string::npos)
             fileName.replace(loc, loc + 2, "/");
 
         std::string filepath = directory + fileName;
@@ -241,7 +242,8 @@ void ModelImporter::ProcessMaterial(aiMaterial* material, Material& myMaterial, 
 
         std::string fileName = aiFilename.C_Str();
 
-        if (size_t loc = fileName.find("\\"))
+        size_t loc = fileName.find("\\");
+        if (loc != std::string::npos)
             fileName.replace(loc, loc + 2, "/");
 
         std::string filepath = directory + fileName;
@@ -253,7 +255,8 @@ void ModelImporter::ProcessMaterial(aiMaterial* material, Material& myMaterial, 
 
         std::string fileName = aiFilename.C_Str();
 
-        if (size_t loc = fileName.find("\\"))
+        size_t loc = fileName.find("\\");
+        if (loc != std::string::npos)
             fileName.replace(loc, loc + 2, "/");
 
         std::string filepath = directory + fileName;
@@ -265,7 +268,8 @@ void ModelImporter::ProcessMaterial(aiMaterial* material, Material& myMaterial, 
 
         std::string fileName = aiFilename.C_Str();
 
-        if (size_t loc = fileName.find("\\"))
+        size_t loc = fileName.find("\\");
+        if (loc != std::string::npos)
             fileName.replace(loc, loc + 2, "/");
 
         std::string filepath = directory + fileName;

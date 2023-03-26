@@ -8,7 +8,7 @@
 layout(binding = 1, std140) uniform LocalParams
 {
 	mat4 model;
-	mat4 viewProj;
+	mat4 mvp;
 };
 
 layout(location = 0) in vec3 aPosition;
@@ -29,7 +29,7 @@ void main()
 	vec3 pos = aPosition;
 	//pos.z *= -1.0;
 
-	gl_Position = viewProj * model * vec4(pos, 1);
+	gl_Position = mvp * vec4(pos, 1);
 	vTexCoords = aTexCoord;
 	vNormals = aNormals;
 }

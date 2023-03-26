@@ -31,7 +31,7 @@ void Camera::ReCalculateMatrices()
 
 	direction = glm::normalize(position - target);
 	right = glm::normalize(glm::cross({ 0,1,0 }, direction));
-	this->up = glm::cross(direction, right);
+	up = glm::cross(direction, right);
 	forward = glm::normalize(glm::cross(up, right));
 
 	viewProj = proj * view;
