@@ -5,11 +5,11 @@
 
 // Vertex Buffer ===========================================================
 //template <typename T>
-VertexBuffer::VertexBuffer(float* vertices, uint16_t verticesCount) : count(verticesCount)
+VertexBuffer::VertexBuffer(float* vertices, uint32_t verticesCount) : count(verticesCount)
 {
     glGenBuffers(1, &id);
     glBindBuffer(GL_ARRAY_BUFFER, id);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(/*T*/float) * verticesCount, vertices, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(float) * verticesCount, vertices, GL_STATIC_DRAW);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
@@ -36,11 +36,11 @@ void VertexBuffer::SetLayout(const VertexBufferLayout& bufferLayout)
 // Vertex Buffer ===========================================================
 
 // Index Buffer ============================================================
-IndexBuffer::IndexBuffer(uint32_t* indices, uint16_t indicesCount) : count(indicesCount)
+IndexBuffer::IndexBuffer(uint32_t* indices, uint32_t indicesCount) : count(indicesCount)
 {
     glGenBuffers(1, &id);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, id);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint32_t) * count, indices, GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint32_t) * indicesCount, indices, GL_STATIC_DRAW);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }
 

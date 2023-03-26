@@ -27,7 +27,6 @@ void VertexArray::SetVertexBuffer(const std::shared_ptr<VertexBuffer>& vertexBuf
     glBindVertexArray(id);
     vertexBuffer->Bind();
 
-    int offset = 0;
     const VertexBufferLayout& layout = vertexBuffer->GetLayout();
     for (int i = 0; i < layout.attributes.size(); i++)
     {
@@ -36,21 +35,11 @@ void VertexArray::SetVertexBuffer(const std::shared_ptr<VertexBuffer>& vertexBuf
             attribute.componentCount,
             GL_FLOAT,
             attribute.normalized ? GL_TRUE : GL_FALSE,
-            layout.stride, (const void*)(attribute.offset)
-            /*(void*)(offset * sizeof(GL_FLOAT))*/);
+            layout.stride, (const void*)(attribute.offset));
         glEnableVertexAttribArray(i);
-
-        offset += attribute.componentCount;
     }
 
     vbo = vertexBuffer;
-
-    //glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(ScreenSpaceVertex), (void*)0);
-    //glEnableVertexAttribArray(0);
-    //glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(ScreenSpaceVertex), (void*)(sizeof(float) * 3));
-    //glEnableVertexAttribArray(1);
-    //glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, app->screenSpaceIbo);
-    
 }
 
 void VertexArray::SetIndexBuffer(const std::shared_ptr<IndexBuffer>& indexBuffer)

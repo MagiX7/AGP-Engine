@@ -401,8 +401,8 @@ void Application::Init()
 
     //SetShaderUniforms(this, texturedGeometryShaderIdx);
 
-    patrickModel = ModelImporter::ImportModel("Assets/Models/Cerberus 2/Cerberus_LP.FBX");
-    //patrickModel = ModelImporter::ImportModel("Assets/Models/Cerberus/Cerberus.fbx");
+    //patrickModel = ModelImporter::ImportModel("Assets/Models/Cerberus 2/Cerberus_LP.FBX");
+    patrickModel = ModelImporter::ImportModel("Assets/Models/Cerberus/Cerberus.fbx");
 
 
     glGetIntegerv(GL_MAX_UNIFORM_BLOCK_SIZE, &maxUniformBufferSize);

@@ -95,6 +95,12 @@ std::shared_ptr<Mesh> ModelImporter::ProcessMesh(aiMesh* mesh, const aiScene* sc
     // process vertices
     for (unsigned int i = 0; i < mesh->mNumVertices; i++)
     {
+        if (i == 2324)
+        {
+            int a = 0;
+            a += 9;
+        }
+
         vertices.push_back(mesh->mVertices[i].x);
         vertices.push_back(mesh->mVertices[i].y);
         vertices.push_back(mesh->mVertices[i].z);
@@ -154,7 +160,7 @@ std::shared_ptr<Mesh> ModelImporter::ProcessMesh(aiMesh* mesh, const aiScene* sc
     vertexBufferLayout.stride += 3 * sizeof(float);
     if (hasNormals)
     {
-        vertexBufferLayout.attributes.push_back(VertexBufferAttribute{ 1, 3, 3 * sizeof(float) });
+        vertexBufferLayout.attributes.push_back(VertexBufferAttribute{ 1, 3, vertexBufferLayout.stride });
         vertexBufferLayout.stride += 3 * sizeof(float);
     }
     if (hasTexCoords)

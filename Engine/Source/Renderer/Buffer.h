@@ -25,7 +25,7 @@ class VertexBuffer
 {
 public:
 	//template <typename T>
-	VertexBuffer(float* vertices, uint16_t verticesCount);
+	VertexBuffer(float* vertices, uint32_t verticesCount);
 	virtual ~VertexBuffer();
 
 	void Bind();
@@ -38,7 +38,7 @@ public:
 
 private:
 	unsigned int id;
-	uint16_t count;
+	uint32_t count;
 
 	VertexBufferLayout layout;
 };
@@ -46,17 +46,17 @@ private:
 class IndexBuffer
 {
 public:
-	IndexBuffer(uint32_t* indices, uint16_t count);
+	IndexBuffer(uint32_t* indices, uint32_t count);
 	virtual ~IndexBuffer();
 
 	void Bind();
 	void Unbind();
 
-	inline const uint16_t& GetCount() const { return count; }
+	inline const uint32_t& GetCount() const { return count; }
 
 private:
 	unsigned int id;
-	uint16_t count;
+	uint32_t count;
 };
 
 
