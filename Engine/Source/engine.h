@@ -138,6 +138,8 @@ private:
     std::shared_ptr<IndexBuffer> patrickIbo;
     std::shared_ptr<Texture2D> patrickTexture;
 
+    std::shared_ptr<UniformBuffer> sceneUbo;
+
     Camera camera;
 
     // Mode

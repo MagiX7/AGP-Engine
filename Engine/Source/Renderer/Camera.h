@@ -13,6 +13,7 @@ public:
 
 	inline const glm::mat4& GetProjection() { return proj; }
 	inline const glm::mat4& GetView() { return view; }
+	inline const glm::mat4& GetViewProj() { return viewProj; }
 
 	float GetNearClip() const { return nearClip; }
 	void SetNearClip(float value) { nearClip = value; ReCalculateMatrices(); }
@@ -45,6 +46,7 @@ private:
 private:
 	glm::mat4 proj;
 	glm::mat4 view;
+	glm::mat4 viewProj;
 
 	glm::vec3 position = glm::vec3(0);
 	glm::vec3 rotation = glm::vec3(0);

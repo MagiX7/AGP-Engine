@@ -1,7 +1,6 @@
 #include "Buffer.h"
 #include "Vertex.h"
 
-#include <glad/glad.h>
 #include <glm/gtc/type_ptr.hpp>
 
 // Vertex Buffer ===========================================================
@@ -62,7 +61,8 @@ void IndexBuffer::Unbind()
 
 // Index Buffer ============================================================
 
-UniformBuffer::UniformBuffer(int maxUniformBufferSize) : maxSize(maxUniformBufferSize)
+UniformBuffer::UniformBuffer(int maxUniformBufferSize, int maxUniformBlockAlignment)
+    : maxSize(maxUniformBufferSize), maxAlignment(maxUniformBlockAlignment)
 {
     glGenBuffers(1, &id);
     glBindBuffer(GL_UNIFORM_BUFFER, id);
@@ -74,41 +74,128 @@ UniformBuffer::~UniformBuffer()
 {
 }
 
-void UniformBuffer::Map(void* bufferData, uint32_t size)
-{
-    data = (uint8_t*)glMapBuffer(GL_UNIFORM_BUFFER, GL_WRITE_ONLY);
-    bufferHead = 0;
+//template<typename T>
+//void UniformBuffer::Map(T bufferData)
+//{
+//    glBindBuffer(GL_UNIFORM_BUFFER, id);
+//    data = (uint8_t*)glMapBuffer(GL_UNIFORM_BUFFER, GL_WRITE_ONLY);
+//    bufferHead = 0;
+//
+//    memcpy(data + bufferHead, bufferData, sizeof(T));
+//    bufferHead += sizeof(T);
+//
+//    glUnmapBuffer(GL_UNIFORM_BUFFER);
+//    glBindBuffer(GL_UNIFORM_BUFFER, 0);
+//}
 
-    memcpy(data + bufferHead, bufferData, size);
-    bufferHead += size;
-
-    glUnmapBuffer(GL_UNIFORM_BUFFER);
-    glBindBuffer(GL_UNIFORM_BUFFER, 0);
-}
-
-void UniformBuffer::Map(const glm::mat4& viewProj, const glm::mat4& model)
-{
-    glBindBuffer(GL_UNIFORM_BUFFER, id);
-    data = (uint8_t*)glMapBuffer(GL_UNIFORM_BUFFER, GL_WRITE_ONLY);
-    bufferHead = 0;
-
-    memcpy(data + bufferHead, glm::value_ptr(viewProj), sizeof(glm::mat4));
-    bufferHead += sizeof(glm::mat4);
-
-    memcpy(data + bufferHead, glm::value_ptr(model), sizeof(glm::mat4));
-    bufferHead += sizeof(glm::mat4);
-
-    glUnmapBuffer(GL_UNIFORM_BUFFER);
-    glBindBuffer(GL_UNIFORM_BUFFER, 0);
-}
+//void UniformBuffer::Map(void* bufferData, uint32_t size)
+//{
+//    glBindBuffer(GL_UNIFORM_BUFFER, id);
+//    data = (uint8_t*)glMapBuffer(GL_UNIFORM_BUFFER, GL_WRITE_ONLY);
+//    bufferHead = 0;
+//
+//    memcpy(data + bufferHead, bufferData, size);
+//    bufferHead += size;
+//
+//    glUnmapBuffer(GL_UNIFORM_BUFFER);
+//    glBindBuffer(GL_UNIFORM_BUFFER, 0);
+//}
+//
+//void UniformBuffer::Map(const glm::mat4& viewProj, const glm::mat4& model)
+//{
+//    glBindBuffer(GL_UNIFORM_BUFFER, id);
+//    data = (uint8_t*)glMapBuffer(GL_UNIFORM_BUFFER, GL_WRITE_ONLY);
+//    bufferHead = 0;
+//
+//    memcpy(data + bufferHead, glm::value_ptr(viewProj), sizeof(glm::mat4));
+//    bufferHead += sizeof(glm::mat4);
+//
+//    memcpy(data + bufferHead, glm::value_ptr(model), sizeof(glm::mat4));
+//    bufferHead += sizeof(glm::mat4);
+//
+//    glUnmapBuffer(GL_UNIFORM_BUFFER);
+//    glBindBuffer(GL_UNIFORM_BUFFER, 0);
+//}
 
 void UniformBuffer::Bind()
 {
     glBindBuffer(GL_UNIFORM_BUFFER, id);
 }
 
+void UniformBuffer::BindRange(uint32_t slot, uint32_t offset, uint32_t size)
+{
+    glBindBufferRange(GL_UNIFORM_BUFFER, slot, id, offset, size);
+}
+
 void UniformBuffer::Unbind()
 {
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
+}
+
+void UniformBuffer::Map()
+{
+    glBindBuffer(GL_UNIFORM_BUFFER, id);
+    data = (uint8_t*)glMapBuffer(GL_UNIFORM_BUFFER, GL_WRITE_ONLY);
+    bufferHead = 0;
+}
+
+void UniformBuffer::Unmap()
+{
+    glUnmapBuffer(GL_UNIFORM_BUFFER);
+    glBindBuffer(GL_UNIFORM_BUFFER, 0);
+}
+
+void UniformBuffer::Push1i(int value)
+{
+    PushAlignedData(&value, sizeof(value), 4);
+}
+
+void UniformBuffer::Push1f(float value)
+{
+    PushAlignedData(&value, sizeof(value), 4);
+}
+
+void UniformBuffer::PushVector3f(const glm::vec3& value)
+{
+    PushAlignedData(glm::value_ptr(value), sizeof(value), sizeof(glm::vec4));
+}
+
+void UniformBuffer::PushVector4f(const glm::vec4& value)
+{
+    PushAlignedData(glm::value_ptr(value), sizeof(value), sizeof(glm::vec4));
+}
+
+void UniformBuffer::PushMatrix3f(const glm::mat3& value)
+{
+    PushAlignedData(glm::value_ptr(value), sizeof(value), sizeof(glm::vec4));
+}
+
+void UniformBuffer::PushMatrix4f(const glm::mat4& value)
+{
+    PushAlignedData(glm::value_ptr(value), sizeof(value), sizeof(glm::vec4));
+}
+
+void UniformBuffer::PushAlignedData(const void* incomingDdata, uint32_t size, uint32_t alignment)
+{
+    assert(data != NULL, "The buffer must be mapped first");
+    AlignHead(alignment);
+    memcpy((uint8_t*)data + bufferHead, incomingDdata, size);
+    bufferHead += size;
+}
+
+void UniformBuffer::AlignHead(uint32_t alignment)
+{
+    assert(IsPowerOf2(alignment), "The alignment must be a power of 2");
+    bufferHead = Align(bufferHead, alignment);
+}
+
+bool UniformBuffer::IsPowerOf2(uint32_t value)
+{
+    return value && !(value & (value - 1));
+}
+
+uint32_t UniformBuffer::Align(uint32_t value, uint32_t alignment)
+{
+    return (value + alignment - 1) & ~(alignment - 1);
 }
 

@@ -15,88 +15,88 @@
 
 #include <iostream>
 
-GLuint CreateProgramFromSource(String programSource, const char* shaderName)
-{
-    GLchar  infoLogBuffer[1024] = {};
-    GLsizei infoLogBufferSize = sizeof(infoLogBuffer);
-    GLsizei infoLogSize;
-    GLint   success;
-
-    char versionString[] = "#version 430\n";
-    char shaderNameDefine[128];
-    sprintf(shaderNameDefine, "#define %s\n", shaderName);
-    char vertexShaderDefine[] = "#define VERTEX\n";
-    char fragmentShaderDefine[] = "#define FRAGMENT\n";
-
-    const GLchar* vertexShaderSource[] = {
-        versionString,
-        shaderNameDefine,
-        vertexShaderDefine,
-        programSource.str
-    };
-    const GLint vertexShaderLengths[] = {
-        (GLint) strlen(versionString),
-        (GLint) strlen(shaderNameDefine),
-        (GLint) strlen(vertexShaderDefine),
-        (GLint) programSource.len
-    };
-    const GLchar* fragmentShaderSource[] = {
-        versionString,
-        shaderNameDefine,
-        fragmentShaderDefine,
-        programSource.str
-    };
-    const GLint fragmentShaderLengths[] = {
-        (GLint) strlen(versionString),
-        (GLint) strlen(shaderNameDefine),
-        (GLint) strlen(fragmentShaderDefine),
-        (GLint) programSource.len
-    };
-
-    GLuint vshader = glCreateShader(GL_VERTEX_SHADER);
-    int a = ARRAY_COUNT(vertexShaderSource);
-    glShaderSource(vshader, a, vertexShaderSource, vertexShaderLengths);
-    glCompileShader(vshader);
-    glGetShaderiv(vshader, GL_COMPILE_STATUS, &success);
-    if (!success)
-    {
-        glGetShaderInfoLog(vshader, infoLogBufferSize, &infoLogSize, infoLogBuffer);
-        ELOG("glCompileShader() failed with vertex shader %s\nReported message:\n%s\n", shaderName, infoLogBuffer);
-    }
-    
-    GLuint fshader = glCreateShader(GL_FRAGMENT_SHADER);
-    a = ARRAY_COUNT(fragmentShaderSource);
-    glShaderSource(fshader, a, fragmentShaderSource, fragmentShaderLengths);
-    glCompileShader(fshader);
-    glGetShaderiv(fshader, GL_COMPILE_STATUS, &success);
-    if (!success)
-    {
-        glGetShaderInfoLog(fshader, infoLogBufferSize, &infoLogSize, infoLogBuffer);
-        ELOG("glCompileShader() failed with fragment shader %s\nReported message:\n%s\n", shaderName, infoLogBuffer);
-    }
-
-    GLuint programHandle = glCreateProgram();
-    glAttachShader(programHandle, vshader);
-    glAttachShader(programHandle, fshader);
-    glLinkProgram(programHandle);
-    glGetProgramiv(programHandle, GL_LINK_STATUS, &success);
-    if (!success)
-    {
-        glGetProgramInfoLog(programHandle, infoLogBufferSize, &infoLogSize, infoLogBuffer);
-        ELOG("glLinkProgram() failed with program %s\nReported message:\n%s\n", shaderName, infoLogBuffer);
-    }
-
-    glUseProgram(0);
-
-    glDetachShader(programHandle, vshader);
-    glDetachShader(programHandle, fshader);
-    glDeleteShader(vshader);
-    glDeleteShader(fshader);
-
-    std::cout << shaderName << " Shader loaded successfully." << std::endl;
-
-    return programHandle;
-}
+//GLuint CreateProgramFromSource(String programSource, const char* shaderName)
+//{
+//    GLchar  infoLogBuffer[1024] = {};
+//    GLsizei infoLogBufferSize = sizeof(infoLogBuffer);
+//    GLsizei infoLogSize;
+//    GLint   success;
+//
+//    char versionString[] = "#version 430\n";
+//    char shaderNameDefine[128];
+//    sprintf(shaderNameDefine, "#define %s\n", shaderName);
+//    char vertexShaderDefine[] = "#define VERTEX\n";
+//    char fragmentShaderDefine[] = "#define FRAGMENT\n";
+//
+//    const GLchar* vertexShaderSource[] = {
+//        versionString,
+//        shaderNameDefine,
+//        vertexShaderDefine,
+//        programSource.str
+//    };
+//    const GLint vertexShaderLengths[] = {
+//        (GLint) strlen(versionString),
+//        (GLint) strlen(shaderNameDefine),
+//        (GLint) strlen(vertexShaderDefine),
+//        (GLint) programSource.len
+//    };
+//    const GLchar* fragmentShaderSource[] = {
+//        versionString,
+//        shaderNameDefine,
+//        fragmentShaderDefine,
+//        programSource.str
+//    };
+//    const GLint fragmentShaderLengths[] = {
+//        (GLint) strlen(versionString),
+//        (GLint) strlen(shaderNameDefine),
+//        (GLint) strlen(fragmentShaderDefine),
+//        (GLint) programSource.len
+//    };
+//
+//    GLuint vshader = glCreateShader(GL_VERTEX_SHADER);
+//    int a = ARRAY_COUNT(vertexShaderSource);
+//    glShaderSource(vshader, a, vertexShaderSource, vertexShaderLengths);
+//    glCompileShader(vshader);
+//    glGetShaderiv(vshader, GL_COMPILE_STATUS, &success);
+//    if (!success)
+//    {
+//        glGetShaderInfoLog(vshader, infoLogBufferSize, &infoLogSize, infoLogBuffer);
+//        ELOG("glCompileShader() failed with vertex shader %s\nReported message:\n%s\n", shaderName, infoLogBuffer);
+//    }
+//    
+//    GLuint fshader = glCreateShader(GL_FRAGMENT_SHADER);
+//    a = ARRAY_COUNT(fragmentShaderSource);
+//    glShaderSource(fshader, a, fragmentShaderSource, fragmentShaderLengths);
+//    glCompileShader(fshader);
+//    glGetShaderiv(fshader, GL_COMPILE_STATUS, &success);
+//    if (!success)
+//    {
+//        glGetShaderInfoLog(fshader, infoLogBufferSize, &infoLogSize, infoLogBuffer);
+//        ELOG("glCompileShader() failed with fragment shader %s\nReported message:\n%s\n", shaderName, infoLogBuffer);
+//    }
+//
+//    GLuint programHandle = glCreateProgram();
+//    glAttachShader(programHandle, vshader);
+//    glAttachShader(programHandle, fshader);
+//    glLinkProgram(programHandle);
+//    glGetProgramiv(programHandle, GL_LINK_STATUS, &success);
+//    if (!success)
+//    {
+//        glGetProgramInfoLog(programHandle, infoLogBufferSize, &infoLogSize, infoLogBuffer);
+//        ELOG("glLinkProgram() failed with program %s\nReported message:\n%s\n", shaderName, infoLogBuffer);
+//    }
+//
+//    glUseProgram(0);
+//
+//    glDetachShader(programHandle, vshader);
+//    glDetachShader(programHandle, fshader);
+//    glDeleteShader(vshader);
+//    glDeleteShader(fshader);
+//
+//    std::cout << shaderName << " Shader loaded successfully." << std::endl;
+//
+//    return programHandle;
+//}
 
 //u32 LoadProgram(Application* app, const char* filepath, const char* programName)
 //{
@@ -385,7 +385,6 @@ Application* Application::instance = nullptr;
 Application::Application()
 {
     instance = this;
-
 }
 
 Application::~Application()
@@ -402,12 +401,15 @@ void Application::Init()
 
     //SetShaderUniforms(this, texturedGeometryShaderIdx);
 
-    patrickModel = ModelImporter::ImportModel("Assets/Models/Cerberus/Cerberus.fbx");
+    patrickModel = ModelImporter::ImportModel("Assets/Models/Cerberus 2/Cerberus_LP.FBX");
+    //patrickModel = ModelImporter::ImportModel("Assets/Models/Cerberus/Cerberus.fbx");
 
 
     glGetIntegerv(GL_MAX_UNIFORM_BLOCK_SIZE, &maxUniformBufferSize);
     glGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT, &uniformBlockAlignment);
+    sceneUbo = std::make_shared<UniformBuffer>(maxUniformBufferSize, uniformBlockAlignment);
 
+    //sceneUbo->Map<glm::mat4>(glm::value_ptr(camera.GetViewProj()));
 
     glGenBuffers(1, &screenSpaceVbo);
     glBindBuffer(GL_ARRAY_BUFFER, screenSpaceVbo);
@@ -448,10 +450,15 @@ void Application::Init()
 
 void Application::Update()
 {
-      //if (app->input.keys[Key::K_W] == BUTTON_PRESSED)
-      //{
-      //    
-      //}
+    //if (app->input.keys[Key::K_W] == BUTTON_PRESSED)
+    //{
+    //    
+    //}
+    sceneUbo->Map();
+    sceneUbo->PushMatrix4f(patrickModel->GetTransform());
+    sceneUbo->PushMatrix4f(camera.GetViewProj());
+    sceneUbo->Unmap();
+
 
 }
 
@@ -495,6 +502,13 @@ void Application::Render()
 
             //app->patrickTexture->Bind(0);
             //app->patrickShader->SetUniform1i("uTexture", 0);
+
+            //sceneUbo->Map();
+            //sceneUbo->PushMatrix4f(patrickModel->GetTransform());
+            //sceneUbo->PushMatrix4f(camera.GetViewProj());
+            //sceneUbo->Unmap();
+
+            sceneUbo->BindRange(1, 0, 2 * sizeof(glm::mat4));
             patrickModel->Draw(camera.GetProjection() * camera.GetView());
             break;
         }
