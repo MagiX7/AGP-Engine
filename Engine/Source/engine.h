@@ -8,6 +8,7 @@
 #include "Resources/Material.h"
 #include "Renderer/Camera.h"
 #include "Entity.h"
+#include "Light.h"
 
 #include <glad/glad.h>
 
@@ -133,16 +134,18 @@ private:
     // Models
     std::shared_ptr<Model> patrickModel;
     std::shared_ptr<Shader> patrickShader;
-    std::shared_ptr<VertexArray> patrickVao;
-    std::shared_ptr<VertexBuffer> patrickVbo;
-    std::shared_ptr<IndexBuffer> patrickIbo;
     std::shared_ptr<Texture2D> patrickTexture;
 
-    std::shared_ptr<UniformBuffer> sceneUbo;
+    std::shared_ptr<UniformBuffer> localParamsUbo;
+    std::shared_ptr<UniformBuffer> globalParamsUbo;
+    int globalParamsOffset;
+    int globalParamsSize;
+
     std::vector<Entity> entities;
     Entity* currentEntity = nullptr;
 
     Camera camera;
+    Light dirLight;
 
     // Mode
     Mode mode;

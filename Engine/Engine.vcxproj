@@ -43,13 +43,13 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
@@ -159,6 +159,7 @@
     <ClCompile Include="Dependencies\stb\stb.cpp" />
     <ClCompile Include="Source\engine.cpp" />
     <ClCompile Include="Source\Entity.cpp" />
+    <ClCompile Include="Source\Light.cpp" />
     <ClCompile Include="Source\ModelImporter.cpp" />
     <ClCompile Include="Source\OldModelImporter.cpp" />
     <ClCompile Include="Source\platform.cpp" />
@@ -187,6 +188,7 @@
     <ClInclude Include="Dependencies\stb\stb_image_write.h" />
     <ClInclude Include="Source\engine.h" />
     <ClInclude Include="Source\Entity.h" />
+    <ClInclude Include="Source\Light.h" />
     <ClInclude Include="Source\ModelImporter.h" />
     <ClInclude Include="Source\Renderer\Buffer.h" />
     <ClInclude Include="Source\Renderer\Camera.h" />

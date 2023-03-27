@@ -393,8 +393,8 @@ Application::~Application()
 
 void Application::Init()
 {
-    camera = Camera({ 0,2,2 }, { 0,0,0 }, 45.0f, 1280 / 720);
-
+    camera = Camera({ 0,-40,200 }, { 0,0,0 }, 45.0f, 1280 / 720);
+    dirLight = Light(LightType::DIRECTIONAL, { 1,1,1 });
 
     texturedGeometryShader = std::make_shared<Shader>("Assets/Shaders/shaders.glsl", "TEXTURED_GEOMETRY");
     //modelShaderIndex = LoadProgram(this, "Assets/Shaders/model.glsl", "MODEL");
@@ -412,7 +412,8 @@ void Application::Init()
 
     glGetIntegerv(GL_MAX_UNIFORM_BLOCK_SIZE, &maxUniformBufferSize);
     glGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT, &uniformBlockAlignment);
-    sceneUbo = std::make_shared<UniformBuffer>(maxUniformBufferSize, uniformBlockAlignment);
+    localParamsUbo = std::make_shared<UniformBuffer>(maxUniformBufferSize, uniformBlockAlignment);
+    globalParamsUbo = std::make_shared<UniformBuffer>(maxUniformBufferSize, uniformBlockAlignment);
 
     //sceneUbo->Map<glm::mat4>(glm::value_ptr(camera.GetViewProj()));
 
@@ -460,21 +461,41 @@ void Application::Update()
     //    
     //}
 
-    sceneUbo->Map();
+    globalParamsUbo->Map();
+
+    globalParamsUbo->AlignHead(uniformBlockAlignment);
+    globalParamsOffset = globalParamsUbo->GetHead();
+    
+    globalParamsUbo->PushVector3f(camera.GetPosition());
+    globalParamsUbo->Push1i(1); // Light count
+    
+    //globalParamsUbo->AlignHead(uniformBlockAlignment);
+    globalParamsUbo->Push1i((int)dirLight.GetType());
+    globalParamsUbo->PushVector3f(dirLight.GetDiffuse());
+    globalParamsUbo->Push1f(dirLight.GetIntensity());
+    globalParamsUbo->PushVector3f(dirLight.GetPosition());
+
+    globalParamsSize = globalParamsUbo->GetHead() - globalParamsOffset;
+
+    globalParamsUbo->Unmap();
+
+
+
+    localParamsUbo->Map();
 
     for (auto& entity : entities)
     {
-        sceneUbo->AlignHead(uniformBlockAlignment);
+        localParamsUbo->AlignHead(uniformBlockAlignment);
 
-        entity.localParamsOffset = sceneUbo->GetHead();
-        sceneUbo->PushMatrix4f(entity.GetTransform());
-        sceneUbo->PushMatrix4f(camera.GetViewProj() * entity.GetTransform());
+        entity.localParamsOffset = localParamsUbo->GetHead();
+        localParamsUbo->PushMatrix4f(entity.GetTransform());
+        localParamsUbo->PushMatrix4f(camera.GetViewProj() * entity.GetTransform());
 
-        entity.localParamsSize = sceneUbo->GetHead() - entity.localParamsOffset;        
+        entity.localParamsSize = localParamsUbo->GetHead() - entity.localParamsOffset;        
 
     }
 
-    sceneUbo->Unmap();
+    localParamsUbo->Unmap();
 
 }
 
@@ -524,10 +545,11 @@ void Application::Render()
             //sceneUbo->PushMatrix4f(camera.GetViewProj());
             //sceneUbo->Unmap();
 
+            globalParamsUbo->BindRange(0, globalParamsOffset, globalParamsSize);
+
             for (auto& entity : entities)
             {
-                sceneUbo->BindRange(1, entity.localParamsOffset, entity.localParamsSize);
-                //sceneUbo->BindRange(1, 0, 2 * sizeof(glm::mat4));
+                localParamsUbo->BindRange(1, entity.localParamsOffset, entity.localParamsSize);
                 entity.GetModel()->Draw();
             }
 
@@ -626,4 +648,7 @@ void Application::OnImGuiRender()
         }
     }
     ImGui::End();
+
+    dirLight.OnImGuiRender();
+
 }

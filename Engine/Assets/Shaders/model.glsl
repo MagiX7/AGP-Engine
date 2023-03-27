@@ -31,10 +31,26 @@ void main()
 
 	gl_Position = mvp * vec4(pos, 1);
 	vTexCoords = aTexCoord;
-	vNormals = aNormals;
+	vNormals = (model * vec4(aNormals, 0)).xyz;
 }
 
 #elif defined(FRAGMENT) ///////////////////////////////////////////////
+
+struct Light
+{
+	int type;
+	vec3 diffuse;
+	float intensity;
+	vec3 position; // Or direction for dir lights
+};
+
+layout(binding = 0, std140) uniform GlobalParams
+{
+	vec3 uCamPos;
+	unsigned int uLightCount;
+	Light uLights[16];
+};
+
 
 layout(location = 0) uniform sampler2D uTexture;
 
@@ -46,7 +62,13 @@ layout(location = 0) out vec4 fragColor;
 void main()
 {
 	//fragColor = vec4(normalize(vNormals), 1);
-	fragColor = texture(uTexture, vTexCoords);
+
+	vec3 lightCol = max(dot(uLights[0].position, vNormals), 0.0) * uLights[0].diffuse * uLights[0].intensity;
+	vec3 tex = texture(uTexture, vTexCoords).rgb;
+
+	vec3 finalColor = lightCol * tex;
+	//finalColor = vNormals;
+	fragColor = vec4(finalColor, 1);
 }
 
 #endif
