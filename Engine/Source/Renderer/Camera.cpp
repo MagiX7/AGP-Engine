@@ -25,7 +25,7 @@ void Camera::SetViewportSize(uint32_t width, uint32_t height)
 
 void Camera::ReCalculateMatrices()
 {
-	proj = glm::perspective(yFov, aspectRatio, nearClip, farClip);
+	proj = glm::perspective(glm::radians(yFov), aspectRatio, nearClip, farClip);
 	const glm::mat4 transform = glm::translate(glm::mat4(1.0), position) * glm::eulerAngleXYZ(rotation.x, rotation.y, rotation.z);
 	view = glm::inverse(transform);
 

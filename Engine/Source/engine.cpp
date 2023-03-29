@@ -8,6 +8,7 @@
 #include "engine.h"
 #include "ModelImporter.h"
 #include "Renderer/Shader.h"
+#include "Renderer/Framebuffer.h"
 
 #include <imgui.h>
 #include <stb_image.h>
@@ -393,11 +394,12 @@ Application::~Application()
 
 void Application::Init()
 {
-    camera = Camera({ 0,-40,200 }, { 0,0,0 }, 45.0f, 1280 / 720);
+    camera = Camera({ 0.0f,-46.8f,200.0f }, { 0,0,0 }, 45.0f, 1280 / 720);
     dirLight = Light(LightType::DIRECTIONAL, { 1,1,1 });
 
+    fbo = std::make_shared<Framebuffer>(displaySize.x, displaySize.y);
+
     texturedGeometryShader = std::make_shared<Shader>("Assets/Shaders/shaders.glsl", "TEXTURED_GEOMETRY");
-    //modelShaderIndex = LoadProgram(this, "Assets/Shaders/model.glsl", "MODEL");
 
     //SetShaderUniforms(this, texturedGeometryShaderIdx);
 
@@ -415,7 +417,6 @@ void Application::Init()
     localParamsUbo = std::make_shared<UniformBuffer>(maxUniformBufferSize, uniformBlockAlignment);
     globalParamsUbo = std::make_shared<UniformBuffer>(maxUniformBufferSize, uniformBlockAlignment);
 
-    //sceneUbo->Map<glm::mat4>(glm::value_ptr(camera.GetViewProj()));
 
     glGenBuffers(1, &screenSpaceVbo);
     glBindBuffer(GL_ARRAY_BUFFER, screenSpaceVbo);
@@ -438,17 +439,18 @@ void Application::Init()
     glBindVertexArray(0);
 
     diceTex = std::make_shared<Texture2D>("Assets/Textures/dice.png");
-    //diceTexIdx = LoadTexture2D(this, "Assets/Textures/dice.png");
-    //whiteTexIdx = LoadTexture2D(this, "Assets/textures/color_white.png");
-    //blackTexIdx = LoadTexture2D(this, "Assets/textures/color_black.png");
-    //normalTexIdx = LoadTexture2D(this, "Assets/textures/color_normal.png");
-    //magentaTexIdx = LoadTexture2D(this, "Assets/textures/color_magenta.png");
-
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     glEnable(GL_CULL_FACE);
     glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LESS);
+    //glClearDepth(1.0);
+    //glStencilFunc(GL_ALWAYS, 1, 0xFF);
+    //glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+    //glStencilMask(0xFF);
+    //glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+    //glDepthMask(GL_FALSE);
 
     //app->mode = Mode_TexturedQuad;
     mode = Mode_Model;
@@ -469,7 +471,6 @@ void Application::Update()
     globalParamsUbo->PushVector3f(camera.GetPosition());
     globalParamsUbo->Push1i(1); // Light count
     
-    //globalParamsUbo->AlignHead(uniformBlockAlignment);
     globalParamsUbo->Push1i((int)dirLight.GetType());
     globalParamsUbo->PushVector3f(dirLight.GetDiffuse());
     globalParamsUbo->Push1f(dirLight.GetIntensity());
@@ -501,28 +502,23 @@ void Application::Update()
 
 void Application::Render()
 {
+    fbo->Bind();
+
     glClearColor(0.08, 0.08, 0.08, 1);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glViewport(0, 0, displaySize.x, displaySize.y);
-    camera.SetViewportSize(displaySize.x, displaySize.y);
 
+    GLuint buffs[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2 };
+    glDrawBuffers(3, buffs);
+    
     switch (mode)
     {
         case Mode_TexturedQuad:
         {
-            //Program& shader = programs[texturedGeometryShaderIdx];
-
             texturedGeometryShader->Bind();
-
-            //glUseProgram(shader.handle);
             glBindVertexArray(screenSpaceVao);
 
             texturedGeometryShader->SetUniform1i("uTexture", 0);
             diceTex->Bind(0);
-            //glUniform1i(glGetUniformLocation(shader.handle, "uTexture"), 0);
-            //glActiveTexture(GL_TEXTURE0);
-            //glBindTexture(GL_TEXTURE_2D, textures[diceTexIdx].handle);
-
             glDrawElements(GL_TRIANGLES, sizeof(quadIndices) / sizeof(u16), GL_UNSIGNED_SHORT, 0);
 
             glBindVertexArray(0);
@@ -532,19 +528,6 @@ void Application::Render()
         }
         case Mode_Model:
         {
-            //app->patrickShader->Bind();
-            //app->patrickShader->SetUniformMatrix4f("view", app->camera.GetView());
-            //app->patrickShader->SetUniformMatrix4f("projection", app->camera.GetProjection());
-            //app->patrickShader->SetUniformMatrix4f("model", app->patrickModel->GetTransform());
-
-            //app->patrickTexture->Bind(0);
-            //app->patrickShader->SetUniform1i("uTexture", 0);
-
-            //sceneUbo->Map();
-            //sceneUbo->PushMatrix4f(patrickModel->GetTransform());
-            //sceneUbo->PushMatrix4f(camera.GetViewProj());
-            //sceneUbo->Unmap();
-
             globalParamsUbo->BindRange(0, globalParamsOffset, globalParamsSize);
 
             for (auto& entity : entities)
@@ -559,6 +542,14 @@ void Application::Render()
     default:
         break;
     }
+
+    fbo->Unbind();
+
+    //glBindVertexArray(screenSpaceVao);
+    //
+    //glDrawElements(GL_TRIANGLES, sizeof(quadIndices) / sizeof(u16), GL_UNSIGNED_SHORT, 0);
+
+    //glBindVertexArray(0);
 
 }
 
@@ -575,6 +566,20 @@ void Application::OnImGuiRender()
     }
     ImGui::EndMainMenuBar();
 
+    ImGui::Begin("Viewport");
+    {
+        ImVec2 dimensions = ImGui::GetContentRegionAvail();
+        if (viewportSize.x != dimensions.x || viewportSize.y != dimensions.y)
+        {
+            fbo->Resize(dimensions.x, dimensions.y);
+            glViewport(0, 0, dimensions.x, dimensions.y);
+            camera.SetViewportSize((uint32_t)dimensions.x, (uint32_t)dimensions.y);
+            viewportSize = { dimensions.x, dimensions.y };
+        }
+        ImGui::Image((void*)fbo->GetDepthAttachment(), { viewportSize.x, viewportSize.y }, { 0,1 }, { 1,0 });
+    }
+    ImGui::End();
+
     ImGui::Begin("Info");
     ImGui::Text("FPS: %f", 1.0f / deltaTime);
     ImGui::End();
@@ -588,6 +593,8 @@ void Application::OnImGuiRender()
         auto& rot = camera.GetRotation();
         if (ImGui::DragFloat3("Rotation", glm::value_ptr(rot), 0.01f))
             camera.SetRotation(rot);
+
+        ImGui::Text("Aspect Ratio: %f", camera.GetAspectRatio());
     }
     ImGui::End();
 
@@ -600,17 +607,7 @@ void Application::OnImGuiRender()
             {
                 currentEntity = &entity;
             }
-
-
-            /*if (ImGui::TreeNodeEx(entity.GetName().c_str()))
-            {
-                
-
-                ImGui::TreePop();
-            }*/
-
         }
-
     }
     ImGui::End();
 
@@ -618,7 +615,6 @@ void Application::OnImGuiRender()
     {
         if (currentEntity)
         {
-
             auto& pos = currentEntity->GetPosition();
             if (ImGui::DragFloat3("Position", glm::value_ptr(pos), 0.01f))
                 currentEntity->SetPosition(pos);

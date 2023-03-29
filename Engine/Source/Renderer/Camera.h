@@ -40,6 +40,8 @@ public:
 	inline const glm::vec3& GetForward() const { return forward; }
 	void SetForward(const glm::vec3& newForward) { forward = newForward; ReCalculateMatrices(); }
 
+	inline float GetAspectRatio() { return aspectRatio; }
+
 private:
 	void ReCalculateMatrices();
 

@@ -64,6 +64,7 @@ const uint16_t quadIndices[] =
     0, 1, 2, 0, 2, 3
 };
 
+class Framebuffer;
 
 class Application
 {
@@ -132,6 +133,9 @@ private:
     int uniformBlockAlignment;
 
     // Models
+    std::shared_ptr<Framebuffer> fbo;
+    glm::vec2 viewportSize = glm::vec2(0);
+
     std::shared_ptr<Model> patrickModel;
     std::shared_ptr<Shader> patrickShader;
     std::shared_ptr<Texture2D> patrickTexture;

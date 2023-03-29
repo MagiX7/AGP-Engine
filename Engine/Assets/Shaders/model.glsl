@@ -17,6 +17,8 @@ layout(location = 2) in vec2 aTexCoord;
 layout(location = 3) in vec3 aTangents;
 layout(location = 4) in vec3 aBitangents;
 
+out vec3 vPosition;
+out vec3 vWorldPosition;
 out vec2 vTexCoords;
 out vec3 vNormals;
 
@@ -27,11 +29,12 @@ out vec3 vNormals;
 void main()
 {
 	vec3 pos = aPosition;
-	//pos.z *= -1.0;
 
 	gl_Position = mvp * vec4(pos, 1);
 	vTexCoords = aTexCoord;
 	vNormals = (model * vec4(aNormals, 0)).xyz;
+	vPosition = aPosition;
+	vWorldPosition = (model * vec4(aPosition, 0)).xyz;
 }
 
 #elif defined(FRAGMENT) ///////////////////////////////////////////////
@@ -54,10 +57,26 @@ layout(binding = 0, std140) uniform GlobalParams
 
 layout(location = 0) uniform sampler2D uTexture;
 
+in vec3 vPosition;
+in vec3 vWorldPosition;
 in vec2 vTexCoords;
 in vec3 vNormals;
 
 layout(location = 0) out vec4 fragColor;
+layout(location = 1) out vec4 normalsColor;
+layout(location = 2) out vec4 depthColor;
+//layout(location = 3) out float depth;
+//layout(depth_equal) out float gl_FragDepth;
+
+
+const float near = 0.01;
+const float far = 1000;
+
+float LinearizeDepth(float depth) 
+{
+    float z = depth * 2.0 - 1.0; // back to NDC 
+    return (2.0 * near * far) / (far + near - z * (far - near));	
+}
 
 void main()
 {
@@ -67,8 +86,20 @@ void main()
 	vec3 tex = texture(uTexture, vTexCoords).rgb;
 
 	vec3 finalColor = lightCol * tex;
-	//finalColor = vNormals;
 	fragColor = vec4(finalColor, 1);
+	normalsColor = vec4(vNormals, 1);
+
+	//float depth = (vPosition / (uCamPos - vPosition)).z;
+	//depthColor = vec4(vec3((uCamPos - vPosition).z), 1);
+	//depthColor = vec4(vec3(normalize(vPosition).z), 1);
+
+	float depth = LinearizeDepth(gl_FragCoord.z) / far;
+	depthColor = vec4(vec3(depth), 1);
+
+	//depth = gl_FragDepth;
+
+	//gl_FragDepth = vPosition.z;
+	
 }
 
 #endif
