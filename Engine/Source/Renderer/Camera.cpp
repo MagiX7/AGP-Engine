@@ -8,7 +8,7 @@ Camera::Camera(const glm::vec3& pos, const glm::vec3& target, float verticalFov,
 {
 	this->target = target;
 
-	nearClip = 0.01f;
+	nearClip = 0.1f;
 	farClip = 1000.0f;
 	ReCalculateMatrices();
 }

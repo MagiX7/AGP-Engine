@@ -394,7 +394,7 @@ Application::~Application()
 
 void Application::Init()
 {
-    camera = Camera({ 0.0f,-46.8f,200.0f }, { 0,0,0 }, 45.0f, 1280 / 720);
+    camera = Camera({ 0.0f,0,200.0f }, { 0,0,0 }, 45.0f, 1280 / 720);
     dirLight = Light(LightType::DIRECTIONAL, { 1,1,1 });
 
     fbo = std::make_shared<Framebuffer>(displaySize.x, displaySize.y);
@@ -442,15 +442,8 @@ void Application::Init()
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    glEnable(GL_CULL_FACE);
     glEnable(GL_DEPTH_TEST);
-    glDepthFunc(GL_LESS);
-    //glClearDepth(1.0);
-    //glStencilFunc(GL_ALWAYS, 1, 0xFF);
-    //glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-    //glStencilMask(0xFF);
-    //glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-    //glDepthMask(GL_FALSE);
+    glEnable(GL_CULL_FACE);
 
     //app->mode = Mode_TexturedQuad;
     mode = Mode_Model;
@@ -505,7 +498,7 @@ void Application::Render()
     fbo->Bind();
 
     glClearColor(0.08, 0.08, 0.08, 1);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT  | GL_STENCIL_BUFFER_BIT);
 
     GLuint buffs[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2 };
     glDrawBuffers(3, buffs);
@@ -576,7 +569,7 @@ void Application::OnImGuiRender()
             camera.SetViewportSize((uint32_t)dimensions.x, (uint32_t)dimensions.y);
             viewportSize = { dimensions.x, dimensions.y };
         }
-        ImGui::Image((void*)fbo->GetDepthAttachment(), { viewportSize.x, viewportSize.y }, { 0,1 }, { 1,0 });
+        ImGui::Image((void*)fbo->GetId(), { viewportSize.x, viewportSize.y }, { 0,1 }, { 1,0 });
     }
     ImGui::End();
 

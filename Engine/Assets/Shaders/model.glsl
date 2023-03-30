@@ -69,7 +69,7 @@ layout(location = 2) out vec4 depthColor;
 //layout(depth_equal) out float gl_FragDepth;
 
 
-const float near = 0.01;
+const float near = 0.1;
 const float far = 1000;
 
 float LinearizeDepth(float depth) 

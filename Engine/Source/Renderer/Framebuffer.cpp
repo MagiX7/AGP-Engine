@@ -15,6 +15,7 @@ Framebuffer::~Framebuffer()
 	glDeleteTextures(1, &colorAttachment);
 	glDeleteTextures(1, &normalsAttachment);
 	glDeleteTextures(1, &depthAttachment);
+	glDeleteRenderbuffers(1, &depthRenderbuffer);
 }
 
 void Framebuffer::Bind()
@@ -46,10 +47,16 @@ void Framebuffer::Create()
 		glDeleteTextures(1, &colorAttachment);
 		glDeleteTextures(1, &normalsAttachment);
 		glDeleteTextures(1, &depthAttachment);
+		glDeleteRenderbuffers(1, &depthRenderbuffer);
 	}
 
 	glGenFramebuffers(1, &id);
 	glBindFramebuffer(GL_FRAMEBUFFER, id);
+
+	glGenRenderbuffers(1, &depthRenderbuffer);
+	glBindRenderbuffer(GL_RENDERBUFFER, depthRenderbuffer);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, width, height);
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthRenderbuffer);
 
 	glGenTextures(1, &colorAttachment);
 	glBindTexture(GL_TEXTURE_2D, colorAttachment);

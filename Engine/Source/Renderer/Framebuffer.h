@@ -28,6 +28,7 @@ private:
 	unsigned int colorAttachment;
 	unsigned int normalsAttachment;
 	unsigned int depthAttachment;
+	unsigned int depthRenderbuffer;
 
 	float width, height;
 
