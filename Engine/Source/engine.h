@@ -97,6 +97,9 @@ public:
 private:
     static Application* instance;
 
+    bool showRenderOptionsPanel = true;
+    unsigned int currentRenderTargetId;
+
     // Loop
     f32  deltaTime;
 
@@ -166,12 +169,3 @@ private:
     GLuint programUniformTexture;
 
 };
-
-//void Init(Application* app);
-
-//void Gui(Application* app);
-
-//void Update(Application* app);
-
-//void Render(Application* app);
-

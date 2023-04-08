@@ -14,6 +14,7 @@ Framebuffer::~Framebuffer()
 	glDeleteFramebuffers(1, &id);
 	glDeleteTextures(1, &colorAttachment);
 	glDeleteTextures(1, &normalsAttachment);
+	glDeleteTextures(1, &positionAttachment);
 	glDeleteTextures(1, &depthAttachment);
 	glDeleteRenderbuffers(1, &depthRenderbuffer);
 }
@@ -29,7 +30,7 @@ void Framebuffer::Unbind()
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-void Framebuffer::Resize(float w, float h)
+unsigned int Framebuffer::Resize(float w, float h)
 {
 	if (w != width || height != h)
 	{
@@ -37,6 +38,8 @@ void Framebuffer::Resize(float w, float h)
 		height = h;
 		Create();
 	}
+
+	return colorAttachment;
 }
 
 void Framebuffer::Create()
@@ -46,6 +49,7 @@ void Framebuffer::Create()
 		glDeleteFramebuffers(1, &id);
 		glDeleteTextures(1, &colorAttachment);
 		glDeleteTextures(1, &normalsAttachment);
+		glDeleteTextures(1, &positionAttachment);
 		glDeleteTextures(1, &depthAttachment);
 		glDeleteRenderbuffers(1, &depthRenderbuffer);
 	}
@@ -78,6 +82,16 @@ void Framebuffer::Create()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glBindTexture(GL_TEXTURE_2D, 0);
 
+	glGenTextures(1, &positionAttachment);
+	glBindTexture(GL_TEXTURE_2D, positionAttachment);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glBindTexture(GL_TEXTURE_2D, 0);
+
 	glGenTextures(1, &depthAttachment);
 	glBindTexture(GL_TEXTURE_2D, depthAttachment);
 	//glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, width, height, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, 0);
@@ -94,8 +108,9 @@ void Framebuffer::Create()
 	
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colorAttachment, 0);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, normalsAttachment, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, positionAttachment, 0);
 	//glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthAttachment, 0);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, depthAttachment, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT3, GL_TEXTURE_2D, depthAttachment, 0);
 
 	GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
 	if (status != GL_FRAMEBUFFER_COMPLETE)
@@ -114,8 +129,8 @@ void Framebuffer::Create()
 		}
 	}
 
-	unsigned int drawBuffers[] = {colorAttachment, normalsAttachment};
+	//unsigned int drawBuffers[] = {colorAttachment, normalsAttachment, positionAttachment, depthAttachment };
+	//glDrawBuffers(4, drawBuffers);
 
-	glDrawBuffers(2, drawBuffers);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }

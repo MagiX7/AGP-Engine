@@ -11,12 +11,13 @@ public:
 	void Bind();
 	void Unbind();
 
-	void Resize(float w, float h);
+	unsigned int Resize(float w, float h);
 
 	inline unsigned int GetId() { return id; }
 	inline unsigned int GetColorAttachment() { return colorAttachment; }
-	inline unsigned int GetDepthAttachment() { return depthAttachment; }
 	inline unsigned int GetNormalsAttachment() { return normalsAttachment; }
+	inline unsigned int GetPositionAttachment() { return positionAttachment; }
+	inline unsigned int GetDepthAttachment() { return depthAttachment; }
 
 	glm::vec2 GetSize() { return { width, height }; }
 
@@ -27,6 +28,7 @@ private:
 	unsigned int id;
 	unsigned int colorAttachment;
 	unsigned int normalsAttachment;
+	unsigned int positionAttachment;
 	unsigned int depthAttachment;
 	unsigned int depthRenderbuffer;
 

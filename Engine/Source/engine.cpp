@@ -398,6 +398,7 @@ void Application::Init()
     dirLight = Light(LightType::DIRECTIONAL, { 1,1,1 });
 
     fbo = std::make_shared<Framebuffer>(displaySize.x, displaySize.y);
+    currentRenderTargetId = fbo->GetColorAttachment();
 
     texturedGeometryShader = std::make_shared<Shader>("Assets/Shaders/shaders.glsl", "TEXTURED_GEOMETRY");
 
@@ -407,9 +408,17 @@ void Application::Init()
     patrickModel = ModelImporter::ImportModel("Assets/Models/Cerberus/Cerberus.fbx");
     //patrickModel = ModelImporter::ImportModel("Assets/Models/Patrick/Patrick.obj");
 
-    entities.emplace_back(Entity("Patrick 1", patrickModel));
-    entities.emplace_back(Entity("Patrick 2", patrickModel));
-    entities.emplace_back(Entity("Patrick 3", patrickModel));
+    Entity m1 = Entity("Right Cerberus", patrickModel);
+    m1.SetPosition({ 40,0,0 });
+    entities.emplace_back(m1);
+
+    Entity m2 = Entity("Center Cerberus", patrickModel);
+    m2.SetPosition({ 0,0,0 });
+    entities.emplace_back(m2);
+
+    Entity m3 = Entity("Left Cerberus", patrickModel);
+    m3.SetPosition({ -40,0,0 });
+    entities.emplace_back(m3);
     
 
     glGetIntegerv(GL_MAX_UNIFORM_BLOCK_SIZE, &maxUniformBufferSize);
@@ -461,6 +470,8 @@ void Application::Update()
     globalParamsUbo->AlignHead(uniformBlockAlignment);
     globalParamsOffset = globalParamsUbo->GetHead();
     
+    globalParamsUbo->Push1f(camera.GetNearClip());
+    globalParamsUbo->Push1f(camera.GetFarClip());
     globalParamsUbo->PushVector3f(camera.GetPosition());
     globalParamsUbo->Push1i(1); // Light count
     
@@ -500,8 +511,8 @@ void Application::Render()
     glClearColor(0.08, 0.08, 0.08, 1);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT  | GL_STENCIL_BUFFER_BIT);
 
-    GLuint buffs[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2 };
-    glDrawBuffers(3, buffs);
+    GLuint buffs[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3 };
+    glDrawBuffers(4, buffs);
     
     switch (mode)
     {
@@ -538,38 +549,72 @@ void Application::Render()
 
     fbo->Unbind();
 
-    //glBindVertexArray(screenSpaceVao);
-    //
-    //glDrawElements(GL_TRIANGLES, sizeof(quadIndices) / sizeof(u16), GL_UNSIGNED_SHORT, 0);
-
-    //glBindVertexArray(0);
-
 }
 
 void Application::OnImGuiRender()
 {
     ImGui::BeginMainMenuBar();
     {
-        //ImGui::BeginMenu("View");
-        /*if (ImGui::MenuItem("Extensions"))
+        if(ImGui::BeginMenu("View"))
         {
+            if (ImGui::MenuItem("Extensions"))
+            {
 
-        }*/
-        //ImGui::EndMenu();
+            }
+            if (ImGui::MenuItem("Render Options"))
+            {
+                showRenderOptionsPanel = true;
+            }
+            ImGui::EndMenu();
+        }
     }
     ImGui::EndMainMenuBar();
+
+
+    if (showRenderOptionsPanel)
+    {
+        ImGui::Begin("Render Options", &showRenderOptionsPanel);
+        {
+            const char* items[] = { "Albedo", "Normals", "Position", "Depth" };
+            static int currentItemIndex = 0;
+            const char* combLabel = items[currentItemIndex];
+            if (ImGui::BeginCombo("Render Target", combLabel))
+            {
+                for (int i = 0; i < IM_ARRAYSIZE(items); i++)
+                {
+                    const bool isSelected = (currentItemIndex == i);
+                    if (ImGui::Selectable(items[i], isSelected))
+                    {
+                        switch (i)
+                        {
+                            case 0: currentRenderTargetId = fbo->GetColorAttachment(); break;
+                            case 1: currentRenderTargetId = fbo->GetNormalsAttachment(); break;
+                            case 2: currentRenderTargetId = fbo->GetPositionAttachment(); break;
+                            case 3: currentRenderTargetId = fbo->GetDepthAttachment(); break;
+                        }
+                        currentItemIndex = i;
+                    }
+
+                    if (isSelected) ImGui::SetItemDefaultFocus();
+                }
+                ImGui::EndCombo();
+            }
+        }
+        ImGui::End();
+    }
+
 
     ImGui::Begin("Viewport");
     {
         ImVec2 dimensions = ImGui::GetContentRegionAvail();
         if (viewportSize.x != dimensions.x || viewportSize.y != dimensions.y)
         {
-            fbo->Resize(dimensions.x, dimensions.y);
+            currentRenderTargetId = fbo->Resize(dimensions.x, dimensions.y);
             glViewport(0, 0, dimensions.x, dimensions.y);
             camera.SetViewportSize((uint32_t)dimensions.x, (uint32_t)dimensions.y);
             viewportSize = { dimensions.x, dimensions.y };
         }
-        ImGui::Image((void*)fbo->GetId(), { viewportSize.x, viewportSize.y }, { 0,1 }, { 1,0 });
+        ImGui::Image((void*)currentRenderTargetId, { viewportSize.x, viewportSize.y }, { 0,1 }, { 1,0 });
     }
     ImGui::End();
 
