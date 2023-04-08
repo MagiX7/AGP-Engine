@@ -5,8 +5,10 @@
 #pragma once
 
 #include "platform.h"
-#include "Mesh.h"
-#include "Vertex.h"
+#include "Resources/Material.h"
+#include "Renderer/Camera.h"
+#include "Entity.h"
+#include "Light.h"
 
 #include <glad/glad.h>
 
@@ -44,7 +46,8 @@ struct Program
 enum Mode
 {
     Mode_TexturedQuad,
-    Mode_Count
+    Mode_Count,
+    Mode_Model
 };
 
 
@@ -61,12 +64,44 @@ const uint16_t quadIndices[] =
     0, 1, 2, 0, 2, 3
 };
 
+class Framebuffer;
 
-struct App
+class Application
 {
+public:
+    Application();
+    virtual ~Application();
+
+    inline static Application& GetInstance() { return *instance; }
+
+    void Init();
+    void Update();
+    void Render();
+    void OnImGuiRender();
+
+    inline float GetDeltaTime() const { return deltaTime; }
+    inline void SetDeltaTime(float dt) { deltaTime = dt; }
+    inline const Input& GetInput() const { return input; }
+    inline Input& GetInput() { return input; }
+    inline const glm::ivec2& GetDisplaySize() const { return displaySize; }
+    inline void SetDisplaySize(const glm::ivec2& size) { displaySize = size; }
+
+private:
+    Application(const Application&);
+    Application& operator=(Application&) {}
+
+
+public:
+    bool isRunning;
+
+private:
+    static Application* instance;
+
+    bool showRenderOptionsPanel = true;
+    unsigned int currentRenderTargetId;
+
     // Loop
     f32  deltaTime;
-    bool isRunning;
 
     // Input
     Input input;
@@ -78,19 +113,46 @@ struct App
     ivec2 displaySize;
 
     std::vector<Texture>  textures;
-    std::vector<Program>  programs;
+    std::vector<Material> materials;
     std::vector<Mesh>     meshes;
+    std::vector<Model>    models;
+    std::vector<Program>  programs;
 
     // program indices
-    u32 texturedGeometryShaderIdx;
+    std::shared_ptr<Shader> texturedGeometryShader;
     u32 modelShaderIndex;
 
     // texture indices
     u32 diceTexIdx;
+    std::shared_ptr<Texture2D> diceTex;
     u32 whiteTexIdx;
     u32 blackTexIdx;
     u32 normalTexIdx;
     u32 magentaTexIdx;
+
+
+    // Buffers
+    int maxUniformBufferSize;
+    int uniformBlockAlignment;
+
+    // Models
+    std::shared_ptr<Framebuffer> fbo;
+    glm::vec2 viewportSize = glm::vec2(0);
+
+    std::shared_ptr<Model> patrickModel;
+    std::shared_ptr<Shader> patrickShader;
+    std::shared_ptr<Texture2D> patrickTexture;
+
+    std::shared_ptr<UniformBuffer> localParamsUbo;
+    std::shared_ptr<UniformBuffer> globalParamsUbo;
+    int globalParamsOffset;
+    int globalParamsSize;
+
+    std::vector<Entity> entities;
+    Entity* currentEntity = nullptr;
+
+    Camera camera;
+    Light dirLight;
 
     // Mode
     Mode mode;
@@ -107,12 +169,3 @@ struct App
     GLuint programUniformTexture;
 
 };
-
-void Init(App* app);
-
-void Gui(App* app);
-
-void Update(App* app);
-
-void Render(App* app);
-

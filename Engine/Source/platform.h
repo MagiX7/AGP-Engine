@@ -69,6 +69,8 @@ String MakePath(String dir, String filename);
 
 String GetDirectoryPart(String path);
 
+//std::string NormalizePath(const std::string& path);
+
 /**
  * Reads a whole file and returns a string with its contents. The returned string
  * is temporary and should be copied if it needs to persist for several frames.
