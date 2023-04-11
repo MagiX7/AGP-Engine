@@ -157,12 +157,11 @@
     <ClCompile Include="Dependencies\imgui-docking\imgui_tables.cpp" />
     <ClCompile Include="Dependencies\imgui-docking\imgui_widgets.cpp" />
     <ClCompile Include="Dependencies\stb\stb.cpp" />
-    <ClCompile Include="Source\engine.cpp" />
+    <ClCompile Include="Source\Engine.cpp" />
     <ClCompile Include="Source\Entity.cpp" />
     <ClCompile Include="Source\Light.cpp" />
     <ClCompile Include="Source\ModelImporter.cpp" />
-    <ClCompile Include="Source\OldModelImporter.cpp" />
-    <ClCompile Include="Source\platform.cpp" />
+    <ClCompile Include="Source\Platform.cpp" />
     <ClCompile Include="Source\Renderer\Buffer.cpp" />
     <ClCompile Include="Source\Renderer\Camera.cpp" />
     <ClCompile Include="Source\Renderer\Framebuffer.cpp" />
@@ -187,7 +186,7 @@
     <ClInclude Include="Dependencies\imgui-docking\imstb_truetype.h" />
     <ClInclude Include="Dependencies\stb\stb_image.h" />
     <ClInclude Include="Dependencies\stb\stb_image_write.h" />
-    <ClInclude Include="Source\engine.h" />
+    <ClInclude Include="Source\Engine.h" />
     <ClInclude Include="Source\Entity.h" />
     <ClInclude Include="Source\Light.h" />
     <ClInclude Include="Source\ModelImporter.h" />
@@ -198,8 +197,7 @@
     <ClInclude Include="Source\Renderer\VertexArray.h" />
     <ClInclude Include="Source\Resources\Material.h" />
     <ClInclude Include="Source\Resources\Model.h" />
-    <ClInclude Include="Source\OldModelImporter.h" />
-    <ClInclude Include="Source\platform.h" />
+    <ClInclude Include="Source\Platform.h" />
     <ClInclude Include="Source\Renderer\Vertex.h" />
     <ClInclude Include="Source\Renderer\Texture2D.h" />
   </ItemGroup>
