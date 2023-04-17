@@ -136,6 +136,7 @@ private:
 
     // Shaders
     std::shared_ptr<Shader> deferredPassShader;
+    std::shared_ptr<Shader> postProcessShader;
 
     // Buffers
     int maxUniformBufferSize;

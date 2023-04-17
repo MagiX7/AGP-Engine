@@ -59,6 +59,7 @@ layout(binding = 0, std140) uniform GlobalParams
 
 
 layout(location = 0) uniform sampler2D uTexture;
+uniform float smoothness;
 
 in vec3 vPosition;
 in vec3 vWorldPosition;
@@ -68,7 +69,8 @@ in vec3 vNormals;
 layout(location = 0) out vec4 fragColor;
 layout(location = 1) out vec4 normalsColor;
 layout(location = 2) out vec4 positionColor;
-layout(location = 3) out vec4 depthColor;
+layout(location = 3) out vec4 specularColor;
+layout(location = 4) out vec4 depthColor;
 
 
 float LinearizeDepth(float depth) 
@@ -79,16 +81,21 @@ float LinearizeDepth(float depth)
 
 void main()
 {
-	vec3 col = vec3(0);
+	vec4 col = vec4(0);
 	
 	if (renderMode == 0)
 	{
 		vec3 lightCol = max(dot(uLights[0].position, vNormals), 0.0) * uLights[0].diffuse * uLights[0].intensity;
-		vec3 tex = texture(uTexture, vTexCoords).rgb;
-		col = lightCol * tex;
+		vec4 tex = texture2D(uTexture, vTexCoords);
+		col = vec4(lightCol, 1) * tex;
+	}
+	else
+	{
+		// If deferred, just output the albedo
+		col = texture2D(uTexture, vTexCoords);
 	}
 
-	fragColor = vec4(col, 1);
+	fragColor = col;
 	normalsColor = vec4(vNormals, 1);
 	positionColor = vec4(normalize(vWorldPosition), 1);
 

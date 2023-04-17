@@ -15,10 +15,11 @@ Material::~Material()
 
 void Material::Bind()
 {
-	if (Application::GetInstance().GetRenderPath() == RenderPath::FORWARD)
+	//if (Application::GetInstance().GetRenderPath() == RenderPath::FORWARD)
 	{
 		shader->Bind();
 		shader->SetUniformVec3f("albedoColor", albedoColor);
+		shader->SetUniform1f("smoothness", smoothness);
 
 		if (albedoMap)
 		{
@@ -32,7 +33,7 @@ void Material::Bind()
 			shader->SetUniform1i("normalMap", 1);
 		}
 	}
-	else
+	//else
 	{
 
 	}

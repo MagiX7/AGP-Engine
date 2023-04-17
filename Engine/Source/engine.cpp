@@ -109,7 +109,7 @@ void Application::Init()
 
     texturedGeometryShader = std::make_shared<Shader>("Assets/Shaders/shaders.glsl", "TEXTURED_GEOMETRY");
     deferredPassShader = std::make_shared<Shader>("Assets/Shaders/deferred_pass.glsl", "DEFERRED");
-
+    postProcessShader = std::make_shared<Shader>("Assets/Shaders/post_process.glsl", "POST_PROCESS");
 
     //SetShaderUniforms(this, texturedGeometryShaderIdx);
 
@@ -220,7 +220,7 @@ void Application::Render()
     glEnable(GL_DEPTH_TEST);
 
     glClearColor(0.08, 0.08, 0.08, 1);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT  | GL_STENCIL_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     GLuint buffs[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3 };
     glDrawBuffers(4, buffs);
@@ -243,20 +243,17 @@ void Application::Render()
         }
         case Mode_Model:
         {
-            if (renderPath == RenderPath::FORWARD)
-            {
-                globalParamsUbo->BindRange(0, globalParamsOffset, globalParamsSize);
+            //if (renderPath == RenderPath::FORWARD)
+            //{
+            glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 1, -1, "Geometry pass");
+            globalParamsUbo->BindRange(0, globalParamsOffset, globalParamsSize);
 
-                for (auto& entity : entities)
-                {
-                    localParamsUbo->BindRange(1, entity.localParamsOffset, entity.localParamsSize);
-                    entity.GetModel()->Draw();
-                }
-            }
-            else
+            for (auto& entity : entities)
             {
-
+                localParamsUbo->BindRange(1, entity.localParamsOffset, entity.localParamsSize);
+                entity.GetModel()->Draw(true);
             }
+            glPopDebugGroup();
 
             break;
         }
@@ -269,15 +266,14 @@ void Application::Render()
 
     if (renderPath == RenderPath::DEFERRED)
     {
+        glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 2, -1, "Deferred pass");
+        
         deferredPassFbo->Bind();
-        glDisable(GL_DEPTH_TEST);
-
         glClearColor(0.08, 0.08, 0.08, 1);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-
-        glDrawBuffer(GL_COLOR_ATTACHMENT0);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         deferredPassShader->Bind();
+        deferredPassShader->SetUniform1i("renderTarget", currentRenderTargetId);
         deferredPassShader->SetUniform1i("renderMode", currentRenderTargetId);
         glBindVertexArray(screenSpaceVao);
 
@@ -297,11 +293,53 @@ void Application::Render()
         glBindTexture(GL_TEXTURE_2D, gBufferFbo->GetDepthAttachment());
         deferredPassShader->SetUniform1i("uDepthTexture", 3);
 
+        globalParamsUbo->BindRange(0, globalParamsOffset, globalParamsSize);
+
+        glDrawBuffer(GL_COLOR_ATTACHMENT0);
+        glBindVertexArray(screenSpaceVao);
+        glDrawElements(GL_TRIANGLES, sizeof(quadIndices) / sizeof(u16), GL_UNSIGNED_SHORT, 0);
+
+        glPopDebugGroup();
+        deferredPassFbo->Unbind();
+
+    }
+
+
+    //if (renderPath == RenderPath::DEFERRED)
+    {
+        postProcessShader->Bind();
+        glDisable(GL_DEPTH_TEST);
+
+        glClearColor(0.08, 0.08, 0.08, 1);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        glDrawBuffer(GL_COLOR_ATTACHMENT0);
+
+        postProcessShader->Bind();
+        postProcessShader->SetUniform1i("renderMode", currentRenderTargetId);
+        glBindVertexArray(screenSpaceVao);
+
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, deferredPassFbo->GetColorAttachment());
+        postProcessShader->SetUniform1i("uColorTexture", 0);
+
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, deferredPassFbo->GetNormalsAttachment());
+        postProcessShader->SetUniform1i("uNormalsTexture", 1);
+
+        glActiveTexture(GL_TEXTURE2);
+        glBindTexture(GL_TEXTURE_2D, deferredPassFbo->GetPositionAttachment());
+        postProcessShader->SetUniform1i("uPositionTexture", 2);
+
+        glActiveTexture(GL_TEXTURE3);
+        glBindTexture(GL_TEXTURE_2D, deferredPassFbo->GetDepthAttachment());
+        postProcessShader->SetUniform1i("uDepthTexture", 3);
+
         glDrawElements(GL_TRIANGLES, sizeof(quadIndices) / sizeof(u16), GL_UNSIGNED_SHORT, 0);
 
         glBindVertexArray(0);
         glUseProgram(0);
-        deferredPassFbo->Unbind();
+        postProcessShader->Unbind();
     }
 
 

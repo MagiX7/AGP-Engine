@@ -56,7 +56,7 @@ public:
 	Mesh(const std::string& name, std::vector<float> vertices, std::vector<uint32_t> indices, VertexBufferLayout layout);
 	virtual ~Mesh();
 
-	void Draw();
+	void Draw(bool bindMaterial);
 
 	void SetMaterial(std::shared_ptr<Material> mat) { material = mat; }
 		
@@ -82,7 +82,7 @@ class Model
 public:
 	Model(const std::string& name);
 	virtual ~Model();
-	void Draw();
+	void Draw(bool bindMaterial);
 
 	inline const std::vector<std::shared_ptr<Mesh>>& GetMeshes() { return meshes; }
 

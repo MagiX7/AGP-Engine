@@ -28,8 +28,6 @@ Mesh::Mesh(const std::string& meshName, std::vector<float> vertices, std::vector
 
 	ibo = std::make_shared<IndexBuffer>(&indices[0], indices.size());
 	vao->SetIndexBuffer(ibo);
-
-	//ubo = std::make_shared<UniformBuffer>();
 }
 
 Mesh::~Mesh()
@@ -38,14 +36,16 @@ Mesh::~Mesh()
 	indices.clear();
 }
 
-void Mesh::Draw()
+void Mesh::Draw(bool bindMaterial)
 {
 	//if (!material)
 	//{
 	//	std::cout << "Assign a material to mesh " << name << std::endl;
 	//	return;
 	//}
-	material->Bind();
+
+	if (bindMaterial)
+		material->Bind();
 
 	vao->Bind();
 	ibo->Bind();
@@ -53,7 +53,8 @@ void Mesh::Draw()
 	ibo->Unbind();
 	vao->Unbind();
 
-	material->Unbind();
+	if (bindMaterial)
+		material->Unbind();
 }
 
 // ==============================================================
@@ -68,10 +69,10 @@ Model::~Model()
 	meshes.clear();
 }
 
-void Model::Draw()
+void Model::Draw(bool bindMaterial)
 {
 	for (auto mesh : meshes)
-		mesh->Draw();
+		mesh->Draw(bindMaterial);
 }
 
 
