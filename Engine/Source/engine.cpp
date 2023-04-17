@@ -98,9 +98,11 @@ void Application::Init()
 {
     camera = Camera({ 0.0f,0,20.0f }, { 0,0,0 }, 45.0f, 1280 / 720);
     //dirLight = Light(LightType::DIRECTIONAL, { 1,1,1 });
-    lights.emplace_back(Light(LightType::DIRECTIONAL, { 1,1,1 }));
-    lights.emplace_back(Light(LightType::DIRECTIONAL, { -1,-1,-1 }));
-    lights.emplace_back(Light(LightType::POINT, { 10,0,0 }));
+    lights.emplace_back(Light(LightType::DIRECTIONAL, {  1, 1, 1 }, { 1 ,1, 1 }));
+    lights.emplace_back(Light(LightType::DIRECTIONAL, { -1,-1,-1 }, { 0.5, 0.5, 0.5 }));
+    lights.emplace_back(Light(LightType::POINT, {  0, 0, 2 }, { 0.75, 0, 0 }));
+    lights.emplace_back(Light(LightType::POINT, { -2, 0, 0 }, {  1.0, 0, 1 }));
+    lights.emplace_back(Light(LightType::POINT, {  2, 0, 0 }, {  0.0, 1, 1 }));
 
     FramebufferAttachments att{ true, true, true, true };
     gBufferFbo = std::make_shared<Framebuffer>(att, displaySize.x, displaySize.y);
@@ -189,7 +191,8 @@ void Application::Update()
     globalParamsUbo->Push1i(lights.size()); // Light count
     for (auto& light : lights)
     {
-        globalParamsUbo->Push1i((int)light.GetType());
+        int a = (int)light.GetType();
+        globalParamsUbo->Push1i(a);
         globalParamsUbo->PushVector3f(light.GetDiffuse());
         globalParamsUbo->PushVector3f(light.GetPosition());
         globalParamsUbo->Push1f(light.GetIntensity());

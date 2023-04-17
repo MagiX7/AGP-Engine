@@ -15,7 +15,7 @@ class Light
 {
 public:
 	Light() {}
-	Light(LightType lightType, const glm::vec3& position);
+	Light(LightType lightType, const glm::vec3& position, const glm::vec3& color);
 	virtual ~Light();
 
 	void OnImGuiRender();
@@ -41,6 +41,5 @@ private:
 
 	// Point
 	glm::vec3 position;
-	float radius;
 
 };

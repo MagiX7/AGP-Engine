@@ -80,12 +80,13 @@ vec3 CalcPointLight(Light light, vec3 normal, vec3 fragPos, vec3 viewDir)
 	//spec = step(0.5f, spec);
 
 	// Attenuation
-	//float distance = length(fragPos - light.position);
-	//float attenuation = 1.0 / (1 + light.constant + light.lin * distance + light.quadratic * (distance * distance));
+	float distance = length(fragPos - light.position);
+    float attenuation = 1.0 / (distance * distance);
 	
-	//attenuation *= light.intensity;
+	attenuation *= light.intensity;
 
 	vec3 diffuse = diff * light.diffuse * light.intensity;
+	diffuse *= attenuation;
 
 	return diffuse;
 }
