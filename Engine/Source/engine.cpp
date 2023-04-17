@@ -99,10 +99,17 @@ void Application::Init()
     camera = Camera({ 0.0f,0,20.0f }, { 0,0,0 }, 45.0f, 1280 / 720);
     dirLight = Light(LightType::DIRECTIONAL, { 1,1,1 });
 
-    fbo = std::make_shared<Framebuffer>(displaySize.x, displaySize.y);
-    currentRenderTargetId = fbo->GetColorAttachment();
+    FramebufferAttachments att{ true, true, true, true };
+    sceneFbo = std::make_shared<Framebuffer>(att, displaySize.x, displaySize.y);
+
+    FramebufferAttachments att2{ true, false, false, false };
+    postProcessFbo = std::make_shared<Framebuffer>(att2, displaySize.x, displaySize.y);
+    
+    currentRenderTargetId = 0;
 
     texturedGeometryShader = std::make_shared<Shader>("Assets/Shaders/shaders.glsl", "TEXTURED_GEOMETRY");
+    postProcessShader = std::make_shared<Shader>("Assets/Shaders/post_process.glsl", "POST_PROCESS");
+
 
     //SetShaderUniforms(this, texturedGeometryShaderIdx);
 
@@ -207,7 +214,8 @@ void Application::Update()
 
 void Application::Render()
 {
-    fbo->Bind();
+    sceneFbo->Bind();
+    glEnable(GL_DEPTH_TEST);
 
     glClearColor(0.08, 0.08, 0.08, 1);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT  | GL_STENCIL_BUFFER_BIT);
@@ -248,7 +256,45 @@ void Application::Render()
         break;
     }
 
-    fbo->Unbind();
+    sceneFbo->Unbind();
+
+
+
+    postProcessFbo->Bind();
+    glDisable(GL_DEPTH_TEST);
+    
+    glClearColor(0.08, 0.08, 0.08, 1);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+    
+    //GLuint buffs2[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3 };
+    //glDrawBuffers(4, buffs);
+    glDrawBuffer(GL_COLOR_ATTACHMENT0);
+
+    postProcessShader->Bind();
+    postProcessShader->SetUniform1i("renderMode", currentRenderTargetId);
+    glBindVertexArray(screenSpaceVao);
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, sceneFbo->GetColorAttachment());
+    postProcessShader->SetUniform1i("uColorTexture", 0);
+
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, sceneFbo->GetNormalsAttachment());
+    postProcessShader->SetUniform1i("uNormalsTexture", 1);
+
+    glActiveTexture(GL_TEXTURE2);
+    glBindTexture(GL_TEXTURE_2D, sceneFbo->GetPositionAttachment());
+    postProcessShader->SetUniform1i("uPositionTexture", 2);
+
+    glActiveTexture(GL_TEXTURE3);
+    glBindTexture(GL_TEXTURE_2D, sceneFbo->GetDepthAttachment());
+    postProcessShader->SetUniform1i("uDepthTexture", 3);
+
+    glDrawElements(GL_TRIANGLES, sizeof(quadIndices) / sizeof(u16), GL_UNSIGNED_SHORT, 0);
+
+    glBindVertexArray(0);
+    glUseProgram(0);
+    postProcessFbo->Unbind();
 
 }
 
@@ -285,16 +331,7 @@ void Application::OnImGuiRender()
                 {
                     const bool isSelected = (currentItemIndex == i);
                     if (ImGui::Selectable(items[i], isSelected))
-                    {
-                        switch (i)
-                        {
-                            case 0: currentRenderTargetId = fbo->GetColorAttachment(); break;
-                            case 1: currentRenderTargetId = fbo->GetNormalsAttachment(); break;
-                            case 2: currentRenderTargetId = fbo->GetPositionAttachment(); break;
-                            case 3: currentRenderTargetId = fbo->GetDepthAttachment(); break;
-                        }
-                        currentItemIndex = i;
-                    }
+                        currentRenderTargetId = currentItemIndex = i;
 
                     if (isSelected) ImGui::SetItemDefaultFocus();
                 }
@@ -310,12 +347,12 @@ void Application::OnImGuiRender()
         ImVec2 dimensions = ImGui::GetContentRegionAvail();
         if (viewportSize.x != dimensions.x || viewportSize.y != dimensions.y)
         {
-            currentRenderTargetId = fbo->Resize(dimensions.x, dimensions.y);
+            sceneFbo->Resize(dimensions.x, dimensions.y);
             glViewport(0, 0, dimensions.x, dimensions.y);
             camera.SetViewportSize((uint32_t)dimensions.x, (uint32_t)dimensions.y);
             viewportSize = { dimensions.x, dimensions.y };
         }
-        ImGui::Image((void*)currentRenderTargetId, { viewportSize.x, viewportSize.y }, { 0,1 }, { 1,0 });
+        ImGui::Image((ImTextureID*)postProcessFbo->GetColorAttachment(), { viewportSize.x, viewportSize.y }, { 0,1 }, { 1,0 });
     }
     ImGui::End();
 

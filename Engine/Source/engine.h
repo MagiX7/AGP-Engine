@@ -49,10 +49,10 @@ enum Mode
 
 const ScreenSpaceVertex screenSpaceVertices[] =
 {
-    { glm::vec3(-0.5, -0.5, 0.0), glm::vec2(0.0, 0.0) },
-    { glm::vec3( 0.5, -0.5, 0.0), glm::vec2(1.0, 0.0) },
-    { glm::vec3( 0.5,  0.5, 0.0), glm::vec2(1.0, 1.0) },
-    { glm::vec3(-0.5,  0.5, 0.0), glm::vec2(0.0, 1.0) }
+    { glm::vec3(-1.0, -1.0, 0.0), glm::vec2(0.0, 0.0) },
+    { glm::vec3( 1.0, -1.0, 0.0), glm::vec2(1.0, 0.0) },
+    { glm::vec3( 1.0,  1.0, 0.0), glm::vec2(1.0, 1.0) },
+    { glm::vec3(-1.0,  1.0, 0.0), glm::vec2(0.0, 1.0) }
 };
 
 const uint16_t quadIndices[] =
@@ -126,13 +126,16 @@ private:
     u32 normalTexIdx;
     u32 magentaTexIdx;
 
+    // Shaders
+    std::shared_ptr<Shader> postProcessShader;
 
     // Buffers
     int maxUniformBufferSize;
     int uniformBlockAlignment;
 
     // Models
-    std::shared_ptr<Framebuffer> fbo;
+    std::shared_ptr<Framebuffer> sceneFbo;
+    std::shared_ptr<Framebuffer> postProcessFbo;
     glm::vec2 viewportSize = glm::vec2(0);
 
     std::shared_ptr<Model> patrickModel;

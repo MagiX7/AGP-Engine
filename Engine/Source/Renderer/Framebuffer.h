@@ -2,16 +2,24 @@
 
 #include <glm/vec2.hpp>
 
+struct FramebufferAttachments
+{
+	bool includeColor = true;
+	bool includeNormals = true;
+	bool includePosition = true;
+	bool includeDepth = true;
+};
+
 class Framebuffer
 {
 public:
-	Framebuffer(float w, float h);
+	Framebuffer(FramebufferAttachments attInfo, float w, float h);
 	virtual ~Framebuffer();
 
 	void Bind();
 	void Unbind();
 
-	unsigned int Resize(float w, float h);
+	void Resize(float w, float h);
 
 	inline unsigned int GetId() { return id; }
 	inline unsigned int GetColorAttachment() { return colorAttachment; }
@@ -31,7 +39,10 @@ private:
 	unsigned int positionAttachment;
 	unsigned int depthAttachment;
 	unsigned int depthRenderbuffer;
+	//unsigned int renderedBufferRenderer;
 
 	float width, height;
+
+	FramebufferAttachments attachmentsInfo;
 
 };
