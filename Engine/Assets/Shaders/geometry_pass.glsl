@@ -1,7 +1,7 @@
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
-#ifdef MODEL
+#ifdef GEO_PASS
 
 #if defined(VERTEX) ///////////////////////////////////////////////////
 
@@ -49,7 +49,6 @@ struct Light
 
 layout(binding = 0, std140) uniform GlobalParams
 {
-	int renderMode;
 	float uNear;
 	float uFar;
 	vec3 uCamPos;
@@ -79,16 +78,10 @@ float LinearizeDepth(float depth)
 
 void main()
 {
-	vec3 col = vec3(0);
-	
-	if (renderMode == 0)
-	{
-		vec3 lightCol = max(dot(uLights[0].position, vNormals), 0.0) * uLights[0].diffuse * uLights[0].intensity;
-		vec3 tex = texture(uTexture, vTexCoords).rgb;
-		col = lightCol * tex;
-	}
+	vec3 lightCol = max(dot(uLights[0].position, vNormals), 0.0) * uLights[0].diffuse * uLights[0].intensity;
+	vec3 tex = texture(uTexture, vTexCoords).rgb;
 
-	fragColor = vec4(col, 1);
+	fragColor = vec4(lightCol * tex, 1);
 	normalsColor = vec4(vNormals, 1);
 	positionColor = vec4(normalize(vWorldPosition), 1);
 

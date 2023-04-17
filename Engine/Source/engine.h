@@ -62,6 +62,11 @@ const uint16_t quadIndices[] =
 
 class Framebuffer;
 
+enum class RenderPath
+{
+    FORWARD = 0, DEFERRED
+};
+
 class Application
 {
 public:
@@ -82,6 +87,8 @@ public:
     inline const glm::ivec2& GetDisplaySize() const { return displaySize; }
     inline void SetDisplaySize(const glm::ivec2& size) { displaySize = size; }
 
+    inline RenderPath GetRenderPath() { return renderPath; }
+
 private:
     Application(const Application&);
     Application& operator=(Application&) {}
@@ -92,6 +99,7 @@ public:
 
 private:
     static Application* instance;
+    RenderPath renderPath;
 
     bool showRenderOptionsPanel = true;
     unsigned int currentRenderTargetId;
@@ -127,15 +135,15 @@ private:
     u32 magentaTexIdx;
 
     // Shaders
-    std::shared_ptr<Shader> postProcessShader;
+    std::shared_ptr<Shader> deferredPassShader;
 
     // Buffers
     int maxUniformBufferSize;
     int uniformBlockAlignment;
 
     // Models
-    std::shared_ptr<Framebuffer> sceneFbo;
-    std::shared_ptr<Framebuffer> postProcessFbo;
+    std::shared_ptr<Framebuffer> gBufferFbo;
+    std::shared_ptr<Framebuffer> deferredPassFbo;
     glm::vec2 viewportSize = glm::vec2(0);
 
     std::shared_ptr<Model> patrickModel;

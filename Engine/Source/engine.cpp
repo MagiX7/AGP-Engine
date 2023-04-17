@@ -100,15 +100,15 @@ void Application::Init()
     dirLight = Light(LightType::DIRECTIONAL, { 1,1,1 });
 
     FramebufferAttachments att{ true, true, true, true };
-    sceneFbo = std::make_shared<Framebuffer>(att, displaySize.x, displaySize.y);
+    gBufferFbo = std::make_shared<Framebuffer>(att, displaySize.x, displaySize.y);
 
     FramebufferAttachments att2{ true, false, false, false };
-    postProcessFbo = std::make_shared<Framebuffer>(att2, displaySize.x, displaySize.y);
+    deferredPassFbo = std::make_shared<Framebuffer>(att2, displaySize.x, displaySize.y);
     
     currentRenderTargetId = 0;
 
     texturedGeometryShader = std::make_shared<Shader>("Assets/Shaders/shaders.glsl", "TEXTURED_GEOMETRY");
-    postProcessShader = std::make_shared<Shader>("Assets/Shaders/post_process.glsl", "POST_PROCESS");
+    deferredPassShader = std::make_shared<Shader>("Assets/Shaders/deferred_pass.glsl", "DEFERRED");
 
 
     //SetShaderUniforms(this, texturedGeometryShaderIdx);
@@ -164,6 +164,7 @@ void Application::Init()
     glEnable(GL_CULL_FACE);
 
     mode = Mode_Model;
+    renderPath = RenderPath::DEFERRED;
 }
 
 void Application::Update()
@@ -178,6 +179,7 @@ void Application::Update()
     globalParamsUbo->AlignHead(uniformBlockAlignment);
     globalParamsOffset = globalParamsUbo->GetHead();
     
+    globalParamsUbo->Push1i((int)renderPath);
     globalParamsUbo->Push1f(camera.GetNearClip());
     globalParamsUbo->Push1f(camera.GetFarClip());
     globalParamsUbo->PushVector3f(camera.GetPosition());
@@ -214,7 +216,7 @@ void Application::Update()
 
 void Application::Render()
 {
-    sceneFbo->Bind();
+    gBufferFbo->Bind();
     glEnable(GL_DEPTH_TEST);
 
     glClearColor(0.08, 0.08, 0.08, 1);
@@ -241,12 +243,19 @@ void Application::Render()
         }
         case Mode_Model:
         {
-            globalParamsUbo->BindRange(0, globalParamsOffset, globalParamsSize);
-
-            for (auto& entity : entities)
+            if (renderPath == RenderPath::FORWARD)
             {
-                localParamsUbo->BindRange(1, entity.localParamsOffset, entity.localParamsSize);
-                entity.GetModel()->Draw();
+                globalParamsUbo->BindRange(0, globalParamsOffset, globalParamsSize);
+
+                for (auto& entity : entities)
+                {
+                    localParamsUbo->BindRange(1, entity.localParamsOffset, entity.localParamsSize);
+                    entity.GetModel()->Draw();
+                }
+            }
+            else
+            {
+
             }
 
             break;
@@ -256,45 +265,48 @@ void Application::Render()
         break;
     }
 
-    sceneFbo->Unbind();
+    gBufferFbo->Unbind();
+
+    if (renderPath == RenderPath::DEFERRED)
+    {
+        deferredPassFbo->Bind();
+        glDisable(GL_DEPTH_TEST);
+
+        glClearColor(0.08, 0.08, 0.08, 1);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+
+        glDrawBuffer(GL_COLOR_ATTACHMENT0);
+
+        deferredPassShader->Bind();
+        deferredPassShader->SetUniform1i("renderMode", currentRenderTargetId);
+        glBindVertexArray(screenSpaceVao);
+
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, gBufferFbo->GetColorAttachment());
+        deferredPassShader->SetUniform1i("uColorTexture", 0);
+
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, gBufferFbo->GetNormalsAttachment());
+        deferredPassShader->SetUniform1i("uNormalsTexture", 1);
+
+        glActiveTexture(GL_TEXTURE2);
+        glBindTexture(GL_TEXTURE_2D, gBufferFbo->GetPositionAttachment());
+        deferredPassShader->SetUniform1i("uPositionTexture", 2);
+
+        glActiveTexture(GL_TEXTURE3);
+        glBindTexture(GL_TEXTURE_2D, gBufferFbo->GetDepthAttachment());
+        deferredPassShader->SetUniform1i("uDepthTexture", 3);
+
+        glDrawElements(GL_TRIANGLES, sizeof(quadIndices) / sizeof(u16), GL_UNSIGNED_SHORT, 0);
+
+        glBindVertexArray(0);
+        glUseProgram(0);
+        deferredPassFbo->Unbind();
+    }
 
 
 
-    postProcessFbo->Bind();
-    glDisable(GL_DEPTH_TEST);
     
-    glClearColor(0.08, 0.08, 0.08, 1);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-    
-    //GLuint buffs2[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3 };
-    //glDrawBuffers(4, buffs);
-    glDrawBuffer(GL_COLOR_ATTACHMENT0);
-
-    postProcessShader->Bind();
-    postProcessShader->SetUniform1i("renderMode", currentRenderTargetId);
-    glBindVertexArray(screenSpaceVao);
-
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, sceneFbo->GetColorAttachment());
-    postProcessShader->SetUniform1i("uColorTexture", 0);
-
-    glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D, sceneFbo->GetNormalsAttachment());
-    postProcessShader->SetUniform1i("uNormalsTexture", 1);
-
-    glActiveTexture(GL_TEXTURE2);
-    glBindTexture(GL_TEXTURE_2D, sceneFbo->GetPositionAttachment());
-    postProcessShader->SetUniform1i("uPositionTexture", 2);
-
-    glActiveTexture(GL_TEXTURE3);
-    glBindTexture(GL_TEXTURE_2D, sceneFbo->GetDepthAttachment());
-    postProcessShader->SetUniform1i("uDepthTexture", 3);
-
-    glDrawElements(GL_TRIANGLES, sizeof(quadIndices) / sizeof(u16), GL_UNSIGNED_SHORT, 0);
-
-    glBindVertexArray(0);
-    glUseProgram(0);
-    postProcessFbo->Unbind();
 
 }
 
@@ -347,12 +359,12 @@ void Application::OnImGuiRender()
         ImVec2 dimensions = ImGui::GetContentRegionAvail();
         if (viewportSize.x != dimensions.x || viewportSize.y != dimensions.y)
         {
-            sceneFbo->Resize(dimensions.x, dimensions.y);
+            gBufferFbo->Resize(dimensions.x, dimensions.y);
             glViewport(0, 0, dimensions.x, dimensions.y);
             camera.SetViewportSize((uint32_t)dimensions.x, (uint32_t)dimensions.y);
             viewportSize = { dimensions.x, dimensions.y };
         }
-        ImGui::Image((ImTextureID*)postProcessFbo->GetColorAttachment(), { viewportSize.x, viewportSize.y }, { 0,1 }, { 1,0 });
+        ImGui::Image((ImTextureID*)deferredPassFbo->GetColorAttachment(), { viewportSize.x, viewportSize.y }, { 0,1 }, { 1,0 });
     }
     ImGui::End();
 
