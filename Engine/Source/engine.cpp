@@ -97,7 +97,10 @@ Application::~Application()
 void Application::Init()
 {
     camera = Camera({ 0.0f,0,20.0f }, { 0,0,0 }, 45.0f, 1280 / 720);
-    dirLight = Light(LightType::DIRECTIONAL, { 1,1,1 });
+    //dirLight = Light(LightType::DIRECTIONAL, { 1,1,1 });
+    lights.emplace_back(Light(LightType::DIRECTIONAL, { 1,1,1 }));
+    lights.emplace_back(Light(LightType::DIRECTIONAL, { -1,-1,-1 }));
+    lights.emplace_back(Light(LightType::POINT, { 10,0,0 }));
 
     FramebufferAttachments att{ true, true, true, true };
     gBufferFbo = std::make_shared<Framebuffer>(att, displaySize.x, displaySize.y);
@@ -183,12 +186,14 @@ void Application::Update()
     globalParamsUbo->Push1f(camera.GetNearClip());
     globalParamsUbo->Push1f(camera.GetFarClip());
     globalParamsUbo->PushVector3f(camera.GetPosition());
-    globalParamsUbo->Push1i(1); // Light count
-    
-    globalParamsUbo->Push1i((int)dirLight.GetType());
-    globalParamsUbo->PushVector3f(dirLight.GetDiffuse());
-    globalParamsUbo->Push1f(dirLight.GetIntensity());
-    globalParamsUbo->PushVector3f(dirLight.GetPosition());
+    globalParamsUbo->Push1i(lights.size()); // Light count
+    for (auto& light : lights)
+    {
+        globalParamsUbo->Push1i((int)light.GetType());
+        globalParamsUbo->PushVector3f(light.GetDiffuse());
+        globalParamsUbo->PushVector3f(light.GetPosition());
+        globalParamsUbo->Push1f(light.GetIntensity());
+    }
 
     globalParamsSize = globalParamsUbo->GetHead() - globalParamsOffset;
 
@@ -299,52 +304,48 @@ void Application::Render()
         glBindVertexArray(screenSpaceVao);
         glDrawElements(GL_TRIANGLES, sizeof(quadIndices) / sizeof(u16), GL_UNSIGNED_SHORT, 0);
 
-        glPopDebugGroup();
         deferredPassFbo->Unbind();
+        glPopDebugGroup();
 
     }
 
+    glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 3, -1, "Post-Processing Pass");
 
-    //if (renderPath == RenderPath::DEFERRED)
-    {
-        postProcessShader->Bind();
-        glDisable(GL_DEPTH_TEST);
+    postProcessShader->Bind();
+    glDisable(GL_DEPTH_TEST);
 
-        glClearColor(0.08, 0.08, 0.08, 1);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glClearColor(0.08, 0.08, 0.08, 1);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        glDrawBuffer(GL_COLOR_ATTACHMENT0);
+    glDrawBuffer(GL_COLOR_ATTACHMENT0);
 
-        postProcessShader->Bind();
-        postProcessShader->SetUniform1i("renderMode", currentRenderTargetId);
-        glBindVertexArray(screenSpaceVao);
+    postProcessShader->Bind();
+    postProcessShader->SetUniform1i("renderMode", currentRenderTargetId);
+    glBindVertexArray(screenSpaceVao);
 
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, deferredPassFbo->GetColorAttachment());
-        postProcessShader->SetUniform1i("uColorTexture", 0);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, deferredPassFbo->GetColorAttachment());
+    postProcessShader->SetUniform1i("uColorTexture", 0);
 
-        glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_2D, deferredPassFbo->GetNormalsAttachment());
-        postProcessShader->SetUniform1i("uNormalsTexture", 1);
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, deferredPassFbo->GetNormalsAttachment());
+    postProcessShader->SetUniform1i("uNormalsTexture", 1);
 
-        glActiveTexture(GL_TEXTURE2);
-        glBindTexture(GL_TEXTURE_2D, deferredPassFbo->GetPositionAttachment());
-        postProcessShader->SetUniform1i("uPositionTexture", 2);
+    glActiveTexture(GL_TEXTURE2);
+    glBindTexture(GL_TEXTURE_2D, deferredPassFbo->GetPositionAttachment());
+    postProcessShader->SetUniform1i("uPositionTexture", 2);
 
-        glActiveTexture(GL_TEXTURE3);
-        glBindTexture(GL_TEXTURE_2D, deferredPassFbo->GetDepthAttachment());
-        postProcessShader->SetUniform1i("uDepthTexture", 3);
+    glActiveTexture(GL_TEXTURE3);
+    glBindTexture(GL_TEXTURE_2D, deferredPassFbo->GetDepthAttachment());
+    postProcessShader->SetUniform1i("uDepthTexture", 3);
 
-        glDrawElements(GL_TRIANGLES, sizeof(quadIndices) / sizeof(u16), GL_UNSIGNED_SHORT, 0);
+    glDrawElements(GL_TRIANGLES, sizeof(quadIndices) / sizeof(u16), GL_UNSIGNED_SHORT, 0);
 
-        glBindVertexArray(0);
-        glUseProgram(0);
-        postProcessShader->Unbind();
-    }
-
-
-
+    glBindVertexArray(0);
+    glUseProgram(0);
+    postProcessShader->Unbind();
     
+    glPopDebugGroup();
 
 }
 
@@ -483,6 +484,24 @@ void Application::OnImGuiRender()
     }
     ImGui::End();
 
-    dirLight.OnImGuiRender();
+
+    ImGui::Begin("Lighting");
+    {
+        for (int i = 0; i < lights.size(); ++i)
+        {
+            ImGui::PushID(i);
+            
+            auto& light = lights[i];
+            if (ImGui::CollapsingHeader(light.GetName().c_str()))
+            {
+                light.OnImGuiRender();
+            }
+
+            ImGui::PopID();
+        }
+    }
+    ImGui::End();
+
+    //dirLight.OnImGuiRender();
 
 }

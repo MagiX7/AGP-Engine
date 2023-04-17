@@ -1,10 +1,11 @@
 #pragma once
 
 #include <glm/glm.hpp>
+#include <string>
 
 enum class LightType
 {
-	NONE,
+	NONE = -1,
 	DIRECTIONAL,
 	POINT,
 	SPOT
@@ -25,10 +26,12 @@ public:
 	// Direction for directionals or position for the rest
 	const glm::vec3& GetPosition();
 
-	LightType GetType() { return type; }
+	inline LightType GetType() { return type; }
+
+	inline const std::string& GetName() { return name; }
 
 private:
-
+	std::string name;
 	LightType type;
 	glm::vec3 diffuse = glm::vec3(1);
 	float intensity = 1.0f;

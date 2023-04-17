@@ -43,8 +43,8 @@ struct Light
 {
 	int type;
 	vec3 diffuse;
-	float intensity;
 	vec3 position; // Or direction for dir lights
+	float intensity;
 };
 
 layout(binding = 0, std140) uniform GlobalParams
@@ -83,16 +83,20 @@ void main()
 {
 	vec4 col = vec4(0);
 	
+	// Forward
 	if (renderMode == 0)
 	{
 		vec3 lightCol = max(dot(uLights[0].position, vNormals), 0.0) * uLights[0].diffuse * uLights[0].intensity;
 		vec4 tex = texture2D(uTexture, vTexCoords);
 		col = vec4(lightCol, 1) * tex;
 	}
+
+	// Deferred
 	else
 	{
 		// If deferred, just output the albedo
-		col = texture2D(uTexture, vTexCoords);
+		col.rgba = texture2D(uTexture, vTexCoords).rgba;
+		//col.a = smoothness;
 	}
 
 	fragColor = col;
@@ -101,7 +105,6 @@ void main()
 
 	float depth = LinearizeDepth(gl_FragCoord.z) / uFar;
 	depthColor = vec4(vec3(depth), 1);
-
 }
 
 #endif

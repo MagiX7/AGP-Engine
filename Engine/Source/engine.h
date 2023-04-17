@@ -138,6 +138,11 @@ private:
     std::shared_ptr<Shader> deferredPassShader;
     std::shared_ptr<Shader> postProcessShader;
 
+    // Lights
+    std::vector<Light> lights;
+    //Light dirLight;
+    //Light dirLight2;
+
     // Buffers
     int maxUniformBufferSize;
     int uniformBlockAlignment;
@@ -160,7 +165,7 @@ private:
     Entity* currentEntity = nullptr;
 
     Camera camera;
-    Light dirLight;
+    
 
     // Mode
     Mode mode;

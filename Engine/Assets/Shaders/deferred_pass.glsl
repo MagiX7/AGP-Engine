@@ -24,8 +24,8 @@ struct Light
 {
 	int type;
 	vec3 diffuse;
-	float intensity;
 	vec3 position; // Or direction for dir lights
+	float intensity;
 };
 
 layout(binding = 0, std140) uniform GlobalParams
@@ -50,19 +50,79 @@ in vec2 vTexCoords;
 
 layout(location = 0) out vec4 fragColor;
 
+
+vec3 CalcDirLight(Light light, vec3 normal, vec3 viewDir)
+{
+	vec3 lightDir = normalize(light.position);
+
+	// Diffuse shading
+	float diff = max(dot(normal, lightDir), 0.0);
+
+	// Specular shading
+	//vec3 reflectDir = reflect(-lightDir, normal);
+	//float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);
+	//spec = step(0.5f, spec);
+	
+	vec3 diffuse = diff * light.diffuse * light.intensity;
+	return diffuse;
+}
+
+vec3 CalcPointLight(Light light, vec3 normal, vec3 fragPos, vec3 viewDir)
+{
+	vec3 lightDir = normalize(light.position - fragPos);
+
+	// Diffuse shading
+	float diff = max(dot(normal, lightDir), 0.0);
+
+	// Specular shading
+	//vec3 reflectDir = reflect(-lightDir, normal);
+	//float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);
+	//spec = step(0.5f, spec);
+
+	// Attenuation
+	//float distance = length(fragPos - light.position);
+	//float attenuation = 1.0 / (1 + light.constant + light.lin * distance + light.quadratic * (distance * distance));
+	
+	//attenuation *= light.intensity;
+
+	vec3 diffuse = diff * light.diffuse * light.intensity;
+
+	return diffuse;
+}
+
 void main()
 {
-	
 	switch(renderTarget)
 	{
 		// Color
 		case 0:
 		{
+			vec3 position = texture2D(uPositionTexture, vTexCoords).xyz;
+			vec3 viewDir = normalize(uCamPos - position);
+			
 			vec3 normals = texture2D(uNormalsTexture, vTexCoords).rgb;
-			vec3 colorTexture = texture(uColorTexture, vTexCoords).rgb;
+			vec3 colorTexture = texture2D(uColorTexture, vTexCoords).rgb;
+			float specular = texture2D(uColorTexture, vTexCoords).a;
 
-			vec3 lightCol = max(dot(uLights[0].position, normals), 0.0) * uLights[0].diffuse * uLights[0].intensity;
-			fragColor = vec4(colorTexture * lightCol, 1);
+			vec3 lightColor = vec3(0);
+
+			for (int i = 0; i < uLightCount; ++i)
+			{
+				// Directional
+				if(uLights[i].type == 0)
+				{
+					lightColor += CalcDirLight(uLights[i], normals, viewDir);
+				}
+				// Point
+				else if(uLights[i].type == 1)
+				{
+					lightColor += CalcPointLight(uLights[i], normals, position, viewDir);
+				}
+			}
+
+			//vec3 lightCol = max(dot(uLights[0].position, normals), 0.0) * uLights[0].diffuse * uLights[0].intensity;
+			
+			fragColor = vec4(colorTexture * lightColor, 1);
 
 			break;
 		}

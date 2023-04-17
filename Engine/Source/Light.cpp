@@ -11,11 +11,18 @@ Light::Light(LightType lightType, const glm::vec3& position)
 		case LightType::DIRECTIONAL:
 		{
 			direction = glm::normalize(position);
+			name = "Directional Light";
 			break;
 		}
 		case LightType::POINT:
+		{
+			name = "Point Light";
+			this->position = position;
+			break;
+		}
 		case LightType::SPOT:
 		{
+			name = "Spot Light";
 			this->position = position;
 			break;
 		}
@@ -28,7 +35,7 @@ Light::~Light()
 
 void Light::OnImGuiRender()
 {
-	ImGui::Begin("Light");
+	//ImGui::Begin("Light");
 	{
 		ImGui::ColorPicker3("Diffuse", glm::value_ptr(diffuse));
 		ImGui::DragFloat("Intensity", &intensity, 0.01f);
@@ -37,9 +44,7 @@ void Light::OnImGuiRender()
 		{
 			case LightType::DIRECTIONAL:
 			{
-				if (ImGui::DragFloat3("Direction", glm::value_ptr(direction), 0.1f))
-				{
-				}
+				ImGui::DragFloat3("Direction", glm::value_ptr(direction), 0.1f);
 				break;
 			}
 
@@ -52,7 +57,7 @@ void Light::OnImGuiRender()
 
 		}
 	}
-	ImGui::End();
+	//ImGui::End();
 }
 
 const glm::vec3& Light::GetPosition()
