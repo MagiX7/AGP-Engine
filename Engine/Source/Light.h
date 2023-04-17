@@ -21,7 +21,9 @@ public:
 	void OnImGuiRender();
 
 	inline const glm::vec3& GetDiffuse() { return diffuse; }
+	
 	float GetIntensity() { return intensity; }
+	void SetIntensity(float value) { intensity = value; }
 
 	// Direction for directionals or position for the rest
 	const glm::vec3& GetPosition();

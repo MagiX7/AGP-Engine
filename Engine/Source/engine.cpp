@@ -100,9 +100,13 @@ void Application::Init()
     //dirLight = Light(LightType::DIRECTIONAL, { 1,1,1 });
     lights.emplace_back(Light(LightType::DIRECTIONAL, {  1, 1, 1 }, { 1 ,1, 1 }));
     lights.emplace_back(Light(LightType::DIRECTIONAL, { -1,-1,-1 }, { 0.5, 0.5, 0.5 }));
-    lights.emplace_back(Light(LightType::POINT, {  0, 0, 2 }, { 0.75, 0, 0 }));
+    lights.emplace_back(Light(LightType::POINT, {  0, 0, 2 }, { 0.75, 0.15, 0.15 }));
     lights.emplace_back(Light(LightType::POINT, { -2, 0, 0 }, {  1.0, 0, 1 }));
+    lights.back().SetIntensity(2.5f);
     lights.emplace_back(Light(LightType::POINT, {  2, 0, 0 }, {  0.0, 1, 1 }));
+    lights.back().SetIntensity(2.5f);
+    lights.emplace_back(Light(LightType::POINT, {  0, 1, 0 }, {  0.0, 1, 0 }));
+    lights.back().SetIntensity(1.5f);
 
     FramebufferAttachments att{ true, true, true, true };
     gBufferFbo = std::make_shared<Framebuffer>(att, displaySize.x, displaySize.y);
@@ -251,8 +255,6 @@ void Application::Render()
         }
         case Mode_Model:
         {
-            //if (renderPath == RenderPath::FORWARD)
-            //{
             glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 1, -1, "Geometry pass");
             globalParamsUbo->BindRange(0, globalParamsOffset, globalParamsSize);
 
