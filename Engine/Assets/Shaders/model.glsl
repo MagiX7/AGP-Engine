@@ -88,9 +88,8 @@ void main()
 	{
 		vec3 lightCol = max(dot(uLights[0].position, vNormals), 0.0) * uLights[0].diffuse * uLights[0].intensity;
 		vec4 tex = texture2D(uTexture, vTexCoords);
-		col = vec4(lightCol, 1) * tex;
+		col = vec4(lightCol, 1) * tex * vec4(1,0,0,1);
 	}
-
 	// Deferred
 	else
 	{

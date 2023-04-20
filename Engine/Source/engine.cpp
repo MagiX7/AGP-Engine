@@ -184,44 +184,43 @@ void Application::Update()
     //}
 
     globalParamsUbo->Map();
-
-    globalParamsUbo->AlignHead(uniformBlockAlignment);
-    globalParamsOffset = globalParamsUbo->GetHead();
-    
-    globalParamsUbo->Push1i((int)renderPath);
-    globalParamsUbo->Push1f(camera.GetNearClip());
-    globalParamsUbo->Push1f(camera.GetFarClip());
-    globalParamsUbo->PushVector3f(camera.GetPosition());
-    globalParamsUbo->Push1i(lights.size()); // Light count
-    for (auto& light : lights)
     {
-        int a = (int)light.GetType();
-        globalParamsUbo->Push1i(a);
-        globalParamsUbo->PushVector3f(light.GetDiffuse());
-        globalParamsUbo->PushVector3f(light.GetPosition());
-        globalParamsUbo->Push1f(light.GetIntensity());
+        globalParamsUbo->AlignHead(uniformBlockAlignment);
+        globalParamsOffset = globalParamsUbo->GetHead();
+
+        globalParamsUbo->Push1i((int)renderPath);
+        globalParamsUbo->Push1f(camera.GetNearClip());
+        globalParamsUbo->Push1f(camera.GetFarClip());
+        globalParamsUbo->PushVector3f(camera.GetPosition());
+        globalParamsUbo->Push1i(lights.size());
+        for (auto& light : lights)
+        {
+            globalParamsUbo->Push1i((int)light.GetType());
+            globalParamsUbo->PushVector3f(light.GetDiffuse());
+            globalParamsUbo->PushVector3f(light.GetPosition());
+            globalParamsUbo->Push1f(light.GetIntensity());
+        }
+
+        globalParamsSize = globalParamsUbo->GetHead() - globalParamsOffset;
     }
-
-    globalParamsSize = globalParamsUbo->GetHead() - globalParamsOffset;
-
     globalParamsUbo->Unmap();
 
 
 
     localParamsUbo->Map();
-
-    for (auto& entity : entities)
     {
-        localParamsUbo->AlignHead(uniformBlockAlignment);
+        for (auto& entity : entities)
+        {
+            localParamsUbo->AlignHead(uniformBlockAlignment);
 
-        entity.localParamsOffset = localParamsUbo->GetHead();
-        localParamsUbo->PushMatrix4f(entity.GetTransform());
-        localParamsUbo->PushMatrix4f(camera.GetViewProj() * entity.GetTransform());
+            entity.localParamsOffset = localParamsUbo->GetHead();
+            localParamsUbo->PushMatrix4f(entity.GetTransform());
+            localParamsUbo->PushMatrix4f(camera.GetViewProj() * entity.GetTransform());
 
-        entity.localParamsSize = localParamsUbo->GetHead() - entity.localParamsOffset;        
+            entity.localParamsSize = localParamsUbo->GetHead() - entity.localParamsOffset;
 
+        }
     }
-
     localParamsUbo->Unmap();
 
 }
@@ -358,16 +357,19 @@ void Application::OnImGuiRender()
 {
     ImGui::BeginMainMenuBar();
     {
-        if(ImGui::BeginMenu("View"))
+        if (ImGui::BeginMenu("View"))
         {
             if (ImGui::MenuItem("Extensions"))
             {
 
             }
-            if (ImGui::MenuItem("Render Options"))
-            {
+            ImGui::EndMenu();
+        }
+        if (ImGui::BeginMenu("Render Options"))
+        {
+            if (ImGui::MenuItem("Show Render Panel"))
                 showRenderOptionsPanel = true;
-            }
+
             ImGui::EndMenu();
         }
     }
@@ -378,21 +380,45 @@ void Application::OnImGuiRender()
     {
         ImGui::Begin("Render Options", &showRenderOptionsPanel);
         {
-            const char* items[] = { "Albedo", "Normals", "Position", "Depth" };
-            static int currentItemIndex = 0;
-            const char* combLabel = items[currentItemIndex];
-            if (ImGui::BeginCombo("Render Target", combLabel))
             {
-                for (int i = 0; i < IM_ARRAYSIZE(items); i++)
+                const char* items[] = { "Albedo", "Normals", "Position", "Depth" };
+                static int currentItemIndex = 0;
+                const char* combLabel = items[currentItemIndex];
+                if (ImGui::BeginCombo("Render Target", combLabel))
                 {
-                    const bool isSelected = (currentItemIndex == i);
-                    if (ImGui::Selectable(items[i], isSelected))
-                        currentRenderTargetId = currentItemIndex = i;
+                    for (int i = 0; i < IM_ARRAYSIZE(items); i++)
+                    {
+                        const bool isSelected = (currentItemIndex == i);
+                        if (ImGui::Selectable(items[i], isSelected))
+                            currentRenderTargetId = currentItemIndex = i;
 
-                    if (isSelected) ImGui::SetItemDefaultFocus();
+                        if (isSelected) ImGui::SetItemDefaultFocus();
+                    }
+                    ImGui::EndCombo();
                 }
-                ImGui::EndCombo();
             }
+
+            {
+                const char* items[] = { "Forward", "Deferred" };
+                static int currentIndex = 1;
+                const char* combLabel = items[currentIndex];
+                if (ImGui::BeginCombo("Rendering Path", combLabel))
+                {
+                    for (int i = 0; i < IM_ARRAYSIZE(items); i++)
+                    {
+                        const bool isSelected = (currentIndex == i);
+                        if (ImGui::Selectable(items[i], isSelected))
+                        {
+                            currentIndex = i;
+                            renderPath = (RenderPath)i;
+                        }
+
+                        if (isSelected) ImGui::SetItemDefaultFocus();
+                    }
+                    ImGui::EndCombo();
+                }
+            }
+
         }
         ImGui::End();
     }
