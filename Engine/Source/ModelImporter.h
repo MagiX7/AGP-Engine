@@ -15,5 +15,4 @@ private:
 	static void ProcessNode(aiNode* node, const aiScene* scene, Model& model);
 	static std::shared_ptr<Mesh> ProcessMesh(aiMesh* node, const aiScene* scene, Model& model);
 	static void ProcessMaterial(aiMaterial* material, Material& myMaterial, const std::string& directory);
-	static void ComputeTangentsAndBiTangents(std::vector<MeshVertex>& vertices, unsigned int indicesCount);
 };

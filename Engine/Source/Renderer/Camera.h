@@ -1,5 +1,7 @@
 #pragma once
 
+#include "../platform.h"
+
 #include <glm/glm.hpp>
 
 class Camera
@@ -8,6 +10,8 @@ public:
 	Camera() {};
 	Camera(const glm::vec3& pos, const glm::vec3& target, float verticalFov, float camAspectRatio);
 	virtual ~Camera();
+
+	void Update(Input& input, float dt);
 
 	void SetViewportSize(uint32_t width, uint32_t height);
 

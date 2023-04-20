@@ -178,6 +178,8 @@ void Application::Init()
 
 void Application::Update()
 {
+    camera.Update(input, deltaTime);
+
     //if (app->input.keys[Key::K_W] == BUTTON_PRESSED)
     //{
     //    
@@ -218,7 +220,6 @@ void Application::Update()
             localParamsUbo->PushMatrix4f(camera.GetViewProj() * entity.GetTransform());
 
             entity.localParamsSize = localParamsUbo->GetHead() - entity.localParamsOffset;
-
         }
     }
     localParamsUbo->Unmap();

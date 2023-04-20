@@ -286,29 +286,4 @@ void ModelImporter::ProcessMaterial(aiMaterial* material, Material& myMaterial, 
     //myMaterial.createNormalFromBump();
 }
 
-void ModelImporter::ComputeTangentsAndBiTangents(std::vector<MeshVertex>& vertices, unsigned int indicesCount)
-{
-    for (int i = 0; i < indicesCount; i += 3)
-    {
-        glm::vec2 uv1 = { vertices[i].texCoords };
-        glm::vec2 uv2 = { vertices[i + 1].texCoords };
-        glm::vec2 uv3 = { vertices[i + 2].texCoords };
-
-        glm::vec2 deltaUv1 = uv2 - uv1;
-        glm::vec2 deltaUv2 = uv3 - uv1;
-
-        glm::vec3 edge1 = vertices[i + 1].position - vertices[i].position;
-        glm::vec3 edge2 = vertices[i + 2].position - vertices[i].position;
-
-        float f = 1.0f / (deltaUv1.x * deltaUv2.y - deltaUv2.x * deltaUv1.y);
-
-        vertices[i].tangents.x = f * (deltaUv2.y * edge1.x - deltaUv1.y * edge2.x);
-        vertices[i].tangents.y = f * (deltaUv2.y * edge1.y - deltaUv1.y * edge2.y);
-        vertices[i].tangents.z = f * (deltaUv2.y * edge1.z - deltaUv1.y * edge2.z);
-        vertices[i].tangents = glm::normalize(vertices[i].tangents);
-
-        if (i + 3 > indicesCount)
-            break;
-    }
-}
 
