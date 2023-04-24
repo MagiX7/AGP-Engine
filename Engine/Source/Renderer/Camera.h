@@ -11,7 +11,7 @@ public:
 	Camera(const glm::vec3& pos, const glm::vec3& target, float verticalFov, float camAspectRatio);
 	virtual ~Camera();
 
-	void Update(Input& input, float dt);
+	void Update(float dt);
 
 	void SetViewportSize(uint32_t width, uint32_t height);
 

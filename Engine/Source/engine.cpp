@@ -178,7 +178,7 @@ void Application::Init()
 
 void Application::Update()
 {
-    camera.Update(input, deltaTime);
+    camera.Update(deltaTime);
 
     //if (app->input.keys[Key::K_W] == BUTTON_PRESSED)
     //{

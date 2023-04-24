@@ -6,6 +6,8 @@
 #include "Entity.h"
 #include "Light.h"
 
+#include <GLFW/glfw3.h>
+
 #include <glad/glad.h>
 
 typedef glm::vec2  vec2;
@@ -82,12 +84,15 @@ public:
 
     inline float GetDeltaTime() const { return deltaTime; }
     inline void SetDeltaTime(float dt) { deltaTime = dt; }
-    inline const Input& GetInput() const { return input; }
-    inline Input& GetInput() { return input; }
+    //inline const Input& GetInput() const { return input; }
+    //inline Input& GetInput() { return input; }
     inline const glm::ivec2& GetDisplaySize() const { return displaySize; }
     inline void SetDisplaySize(const glm::ivec2& size) { displaySize = size; }
 
     inline RenderPath GetRenderPath() { return renderPath; }
+
+    inline void SetWindow(GLFWwindow* win) { window = win; }
+    inline GLFWwindow* GetWindow() { return window; }
 
 private:
     Application(const Application&);
@@ -96,6 +101,7 @@ private:
 
 public:
     bool isRunning;
+    //Input input;
 
 private:
     static Application* instance;
@@ -108,7 +114,7 @@ private:
     f32  deltaTime;
 
     // Input
-    Input input;
+    GLFWwindow* window;
 
     // Graphics
     char gpuName[64];

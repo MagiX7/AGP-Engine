@@ -1,9 +1,10 @@
 #include "Camera.h"
+#include "../Input.h"
 
 #include <glm/gtx/transform.hpp>
 #include <glm/gtx/euler_angles.hpp>
 
-#define CAMERA_SPEED 200.0f
+#define CAMERA_SPEED 20.0f
 
 Camera::Camera(const glm::vec3& pos, const glm::vec3& target, float verticalFov, float camAspectRatio)
 	: position(pos), yFov(verticalFov), aspectRatio(camAspectRatio)
@@ -19,31 +20,43 @@ Camera::~Camera()
 {
 }
 
-void Camera::Update(Input& input, float dt)
+void Camera::Update(float dt)
 {
 	bool recalc = false;
 
-	if (input.keys[K_W] == ButtonState::BUTTON_PRESSED)
+	if (Input::IsKeyPressed(KeyCode::KEY_W))
 	{
 		position += forward * dt * CAMERA_SPEED;
 		recalc = true;
 	}
 	
-	if (input.keys[Key::K_S] == BUTTON_PRESSED)
+	if (Input::IsKeyPressed(KeyCode::KEY_S))
 	{
 		position -= forward * dt * CAMERA_SPEED;
 		recalc = true;
 	}
 
-	if (input.keys[Key::K_A] == BUTTON_PRESSED)
+	if (Input::IsKeyPressed(KeyCode::KEY_A))
 	{
 		position -= right * dt * CAMERA_SPEED;
 		recalc = true;
 	}
 
-	if (input.keys[Key::K_D] == BUTTON_PRESSED)
+	if (Input::IsKeyPressed(KeyCode::KEY_D))
 	{
 		position += right * dt * CAMERA_SPEED;
+		recalc = true;
+	}
+
+	if (Input::IsKeyPressed(KeyCode::KEY_E))
+	{
+		position.y += dt * CAMERA_SPEED;
+		recalc = true;
+	}
+
+	if (Input::IsKeyPressed(KeyCode::KEY_Q))
+	{
+		position.y -= dt * CAMERA_SPEED;
 		recalc = true;
 	}
 
