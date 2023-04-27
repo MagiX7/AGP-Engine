@@ -137,12 +137,12 @@ void main()
 		for (int i = 0; i < uLightCount; ++i)
 		{
 			// Directional
-			if(uLights[i].type == 0)
+			if (uLights[i].type == 0)
 			{
 				lightColor += CalcDirLight(uLights[i], vNormals, viewDir);
 			}
 			// Point
-			else if(uLights[i].type == 1)
+			else if (uLights[i].type == 1)
 			{
 				lightColor += CalcPointLight(uLights[i], vNormals, vWorldPosition, viewDir);
 			}

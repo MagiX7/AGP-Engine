@@ -124,8 +124,8 @@ void Application::Init()
     //SetShaderUniforms(this, texturedGeometryShaderIdx);
 
     //patrickModel = ModelImporter::ImportModel("Assets/Models/Cerberus 2/Cerberus_LP.FBX");
-    //patrickModel = ModelImporter::ImportModel("Assets/Models/Cerberus/Cerberus.fbx");
-    patrickModel = ModelImporter::ImportModel("Assets/Models/Patrick/Patrick.obj");
+    patrickModel = ModelImporter::ImportModel("Assets/Models/Cerberus/Cerberus.fbx");
+    //patrickModel = ModelImporter::ImportModel("Assets/Models/Patrick/Patrick.obj");
 
     Entity m1 = Entity("Right Patrick", patrickModel);
     m1.SetPosition({ 6,0,0 });

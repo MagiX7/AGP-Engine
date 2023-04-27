@@ -98,6 +98,11 @@ void main()
 		// Color
 		case 0:
 		{
+			if (texture2D(uDepthTexture, vTexCoords).x == 0.0)
+			{
+				discard;
+			}
+
 			vec3 position = texture2D(uPositionTexture, vTexCoords).xyz;
 			vec3 viewDir = normalize(uCamPos - position);
 			
@@ -143,7 +148,7 @@ void main()
 		// Depth
 		case 3:
 		{
-			fragColor = texture2D(uDepthTexture, vTexCoords);
+			fragColor = vec4(vec3(texture2D(uDepthTexture, vTexCoords).r), 1.0);
 			break;
 		}
 	}
