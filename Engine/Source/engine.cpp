@@ -1,5 +1,6 @@
 #include "Engine.h"
 #include "ModelImporter.h"
+#include "Input.h"
 #include "Renderer/Shader.h"
 #include "Renderer/Framebuffer.h"
 
@@ -112,7 +113,7 @@ void Application::Init()
     gBufferFbo = std::make_shared<Framebuffer>(att, displaySize.x, displaySize.y);
 
     FramebufferAttachments att2{ true, false, false, false };
-    deferredPassFbo = std::make_shared<Framebuffer>(att2, displaySize.x, displaySize.y);
+    deferredPassFbo = std::make_shared<Framebuffer>(att, displaySize.x, displaySize.y);
     
     currentRenderTargetId = 0;
 
@@ -180,10 +181,8 @@ void Application::Update()
 {
     camera.Update(deltaTime);
 
-    //if (app->input.keys[Key::K_W] == BUTTON_PRESSED)
-    //{
-    //    
-    //}
+    //auto a = Input::GetMousePosition();
+    //std::cout << a.x << " " << a.y << std::endl;
 
     globalParamsUbo->Map();
     {
@@ -325,7 +324,7 @@ void Application::Render()
     glDrawBuffer(GL_COLOR_ATTACHMENT0);
 
     postProcessShader->Bind();
-    postProcessShader->SetUniform1i("renderMode", currentRenderTargetId);
+    postProcessShader->SetUniform1i("renderTarget", currentRenderTargetId);
     glBindVertexArray(screenSpaceVao);
 
     glActiveTexture(GL_TEXTURE0);
@@ -366,10 +365,28 @@ void Application::OnImGuiRender()
             }
             ImGui::EndMenu();
         }
-        if (ImGui::BeginMenu("Render Options"))
+        if (ImGui::BeginMenu("Renderer"))
         {
             if (ImGui::MenuItem("Show Render Panel"))
                 showRenderOptionsPanel = true;
+
+            ImGui::EndMenu();
+        }
+        if (ImGui::BeginMenu("Create"))
+        {
+            if (ImGui::BeginMenu("Light"))
+            {
+                if (ImGui::MenuItem("Directional"))
+                {
+                    lights.emplace_back(LightType::DIRECTIONAL, glm::normalize(glm::vec3(1)), glm::vec3(1));
+                }
+                if (ImGui::MenuItem("Point"))
+                {
+                    lights.emplace_back(LightType::POINT, glm::vec3(0), glm::vec3(1));
+                }
+
+                ImGui::EndMenu();
+            }
 
             ImGui::EndMenu();
         }
@@ -379,7 +396,7 @@ void Application::OnImGuiRender()
 
     if (showRenderOptionsPanel)
     {
-        ImGui::Begin("Render Options", &showRenderOptionsPanel);
+        ImGui::Begin("Renderer", &showRenderOptionsPanel);
         {
             {
                 const char* items[] = { "Albedo", "Normals", "Position", "Depth" };
@@ -419,7 +436,6 @@ void Application::OnImGuiRender()
                     ImGui::EndCombo();
                 }
             }
-
         }
         ImGui::End();
     }
@@ -435,7 +451,24 @@ void Application::OnImGuiRender()
             camera.SetViewportSize((uint32_t)dimensions.x, (uint32_t)dimensions.y);
             viewportSize = { dimensions.x, dimensions.y };
         }
-        ImGui::Image((ImTextureID*)deferredPassFbo->GetColorAttachment(), { viewportSize.x, viewportSize.y }, { 0,1 }, { 1,0 });
+        
+        int id = -1;
+        if (renderPath == RenderPath::FORWARD)
+        {
+            switch(currentRenderTargetId)
+            {
+                case 0: id = gBufferFbo->GetColorAttachment(); break;
+                case 1: id = gBufferFbo->GetNormalsAttachment();  break;
+                case 2: id = gBufferFbo->GetPositionAttachment(); break;
+                case 3: id = gBufferFbo->GetDepthAttachment();  break;
+            }
+        }
+        else
+        {
+            id = deferredPassFbo->GetColorAttachment();
+        }
+        
+        ImGui::Image((ImTextureID*)id, { viewportSize.x, viewportSize.y }, { 0,1 }, { 1,0 });
     }
     ImGui::End();
 
@@ -519,6 +552,7 @@ void Application::OnImGuiRender()
 
     ImGui::Begin("Lighting");
     {
+        int idToDelete = -1;
         for (int i = 0; i < lights.size(); ++i)
         {
             ImGui::PushID(i);
@@ -527,10 +561,16 @@ void Application::OnImGuiRender()
             if (ImGui::CollapsingHeader(light.GetName().c_str()))
             {
                 light.OnImGuiRender();
+                ImGui::Separator();
+                if (ImGui::Button("Delete"))
+                    idToDelete = i;
             }
 
             ImGui::PopID();
         }
+
+        if (idToDelete >= 0)
+            lights.erase(lights.begin() + idToDelete);
     }
     ImGui::End();
 

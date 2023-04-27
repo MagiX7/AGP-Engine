@@ -33,12 +33,12 @@ private:
 	void Create();
 
 private:
-	unsigned int id;
-	unsigned int colorAttachment;
-	unsigned int normalsAttachment;
-	unsigned int positionAttachment;
-	unsigned int depthAttachment;
-	unsigned int depthRenderbuffer;
+	unsigned int id = -1;
+	unsigned int colorAttachment = -1;
+	unsigned int normalsAttachment = -1;
+	unsigned int positionAttachment = -1;
+	unsigned int depthAttachment = -1;
+	unsigned int depthRenderbuffer = -1;
 	//unsigned int renderedBufferRenderer;
 
 	float width, height;

@@ -93,7 +93,7 @@ vec3 CalcPointLight(Light light, vec3 normal, vec3 fragPos, vec3 viewDir)
 
 void main()
 {
-	switch(renderTarget)
+	switch (renderTarget)
 	{
 		// Color
 		case 0:
@@ -121,8 +121,6 @@ void main()
 				}
 			}
 
-			//vec3 lightCol = max(dot(uLights[0].position, normals), 0.0) * uLights[0].diffuse * uLights[0].intensity;
-			
 			fragColor = vec4(colorTexture * lightColor, 1);
 
 			break;
@@ -131,21 +129,21 @@ void main()
 		// Normals
 		case 1:
 		{
-			fragColor = texture(uNormalsTexture, vTexCoords);
+			fragColor = texture2D(uNormalsTexture, vTexCoords);
 			break;
 		}
 
 		// Positions
 		case 2:
 		{
-			fragColor = texture(uPositionTexture, vTexCoords);
+			fragColor = texture2D(uPositionTexture, vTexCoords);
 			break;
 		}
 
 		// Depth
 		case 3:
 		{
-			fragColor = texture(uDepthTexture, vTexCoords);
+			fragColor = texture2D(uDepthTexture, vTexCoords);
 			break;
 		}
 	}

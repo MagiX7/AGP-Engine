@@ -34,7 +34,7 @@ layout(location = 3) uniform sampler2D uDepthTexture;
 in vec3 vPosition;
 in vec2 vTexCoords;
 
-uniform int renderMode;
+uniform int renderTarget;
 
 layout(location = 0) out vec4 fragColor;
 //layout(location = 1) out vec4 normalsColor;
@@ -43,7 +43,7 @@ layout(location = 0) out vec4 fragColor;
 
 void main()
 {
-	switch(renderMode)
+	switch(renderTarget)
 	{
 		// Color
 		case 0:
