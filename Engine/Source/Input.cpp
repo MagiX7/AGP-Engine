@@ -27,6 +27,8 @@ float Input::GetMouseX()
 	double x, y;
 	GLFWwindow* window = Application::GetInstance().GetWindow();
 	glfwGetCursorPos(window, &x, &y);
+	lastMousePosX = x;
+	lastMousePosY = y;
 	return (float)x;
 }
 
@@ -35,17 +37,19 @@ float Input::GetMouseY()
 	double x, y;
 	GLFWwindow* window = Application::GetInstance().GetWindow();
 	glfwGetCursorPos(window, &x, &y);
+	lastMousePosX = x;
+	lastMousePosY = y;
 	return (float)y;
 }
 
 float Input::GetMouseMotionX()
 {
-	return (GetMouseX() - lastMousePosX) / Application::GetInstance().GetDisplaySize().x;
+	return (GetMouseX() - lastMousePosX) / Application::GetInstance().GetViewportSize().x;
 }
 
 float Input::GetMouseMotionY()
 {
-	return (GetMouseX() - lastMousePosY) / Application::GetInstance().GetDisplaySize().y;
+	return (GetMouseX() - lastMousePosY) / Application::GetInstance().GetViewportSize().y;
 }
 
 glm::vec2 Input::GetMousePosition()

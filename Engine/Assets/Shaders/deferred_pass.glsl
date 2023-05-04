@@ -35,7 +35,7 @@ layout(binding = 0, std140) uniform GlobalParams
 	float uFar;
 	vec3 uCamPos;
 	unsigned int uLightCount;
-	Light uLights[16];
+	Light uLights[32];
 };
 
 layout(location = 0) uniform sampler2D uColorTexture;
@@ -98,11 +98,11 @@ void main()
 		// Color
 		case 0:
 		{
-			if (texture2D(uDepthTexture, vTexCoords).x == 0.0)
-			{
+			// If background, discard
+			if (texture2D(uDepthTexture, vTexCoords).x == 1.0)
 				discard;
-			}
 
+			// Retrieve data from textures
 			vec3 position = texture2D(uPositionTexture, vTexCoords).xyz;
 			vec3 viewDir = normalize(uCamPos - position);
 			
@@ -112,6 +112,7 @@ void main()
 
 			vec3 lightColor = vec3(0);
 
+			// Calculate lighting
 			for (int i = 0; i < uLightCount; ++i)
 			{
 				// Directional

@@ -54,7 +54,7 @@ layout(binding = 0, std140) uniform GlobalParams
 	float uFar;
 	vec3 uCamPos;
 	unsigned int uLightCount;
-	Light uLights[16];
+	Light uLights[32];
 };
 
 

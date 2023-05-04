@@ -4,6 +4,8 @@
 #include <glm/gtx/transform.hpp>
 #include <glm/gtx/euler_angles.hpp>
 
+#include <iostream>
+
 #define CAMERA_SPEED 20.0f
 
 Camera::Camera(const glm::vec3& pos, const glm::vec3& target, float verticalFov, float camAspectRatio)
@@ -22,47 +24,72 @@ Camera::~Camera()
 
 void Camera::Update(float dt)
 {
+	static glm::vec2 lastMousePos = { 0,0 };
+	glm::vec2 mousePos = Input::GetMousePosition();
+
 	bool recalc = false;
-
-	if (Input::IsKeyPressed(KeyCode::KEY_W))
+	if (Input::IsMouseButtonPressed(MouseButton::MOUSE_BUTTON_RIGHT))
 	{
-		position += forward * dt * CAMERA_SPEED;
-		recalc = true;
-	}
+		float speed = CAMERA_SPEED;
+		if (Input::IsKeyPressed(KeyCode::KEY_LEFT_SHIFT))
+			speed *= 2.0f;
+
+		if (Input::IsKeyPressed(KeyCode::KEY_W))
+		{
+			position += forward * dt * speed;
+			recalc = true;
+		}
+
+		if (Input::IsKeyPressed(KeyCode::KEY_S))
+		{
+			position -= forward * dt * speed;
+			recalc = true;
+		}
+
+		if (Input::IsKeyPressed(KeyCode::KEY_A))
+		{
+			position -= right * dt * speed;
+			recalc = true;
+		}
+
+		if (Input::IsKeyPressed(KeyCode::KEY_D))
+		{
+			position += right * dt * speed;
+			recalc = true;
+		}
+
+		if (Input::IsKeyPressed(KeyCode::KEY_E))
+		{
+			position.y += dt * speed;
+			recalc = true;
+		}
+
+		if (Input::IsKeyPressed(KeyCode::KEY_Q))
+		{
+			position.y -= dt * speed;
+			recalc = true;
+		}
+
+
+		glm::vec2 delta = mousePos - lastMousePos;
+		if (delta.x != 0)
+		{
+			rotation.y -= delta.x * dt * 0.1f;
+			recalc = true;
+		}
+		if (delta.y != 0)
+		{
+			rotation.x -= delta.y * dt * 0.1f;
+			recalc = true;
+		}
 	
-	if (Input::IsKeyPressed(KeyCode::KEY_S))
-	{
-		position -= forward * dt * CAMERA_SPEED;
-		recalc = true;
+		std::cout << delta.x << ", " << delta.y << std::endl;
 	}
 
-	if (Input::IsKeyPressed(KeyCode::KEY_A))
-	{
-		position -= right * dt * CAMERA_SPEED;
-		recalc = true;
-	}
-
-	if (Input::IsKeyPressed(KeyCode::KEY_D))
-	{
-		position += right * dt * CAMERA_SPEED;
-		recalc = true;
-	}
-
-	if (Input::IsKeyPressed(KeyCode::KEY_E))
-	{
-		position.y += dt * CAMERA_SPEED;
-		recalc = true;
-	}
-
-	if (Input::IsKeyPressed(KeyCode::KEY_Q))
-	{
-		position.y -= dt * CAMERA_SPEED;
-		recalc = true;
-	}
+	lastMousePos = mousePos;
 
 	if (recalc)
 		ReCalculateMatrices();
-
 }
 
 void Camera::SetViewportSize(uint32_t width, uint32_t height)

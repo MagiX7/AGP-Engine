@@ -98,22 +98,52 @@ Application::~Application()
 void Application::Init()
 {
     camera = Camera({ 0.0f,0,20.0f }, { 0,0,0 }, 45.0f, 1280 / 720);
-    //dirLight = Light(LightType::DIRECTIONAL, { 1,1,1 });
-    lights.emplace_back(Light(LightType::DIRECTIONAL, {  1, 1, 1 }, { 1 ,1, 1 }));
+    
+    #pragma region Lights
+
+    lights.emplace_back(Light(LightType::DIRECTIONAL, { 1, 1, 1 }, { 1 ,1, 1 }));
     lights.emplace_back(Light(LightType::DIRECTIONAL, { -1,-1,-1 }, { 0.5, 0.5, 0.5 }));
-    lights.emplace_back(Light(LightType::POINT, {  0, 0, 2 }, { 0.75, 0.15, 0.15 }));
-    lights.emplace_back(Light(LightType::POINT, { -2, 0, 0 }, {  1.0, 0, 1 }));
+
+    lights.emplace_back(Light(LightType::POINT, { -6, 0, 4 }, { 1.00, 0.45, 1. }));
     lights.back().SetIntensity(2.5f);
-    lights.emplace_back(Light(LightType::POINT, {  2, 0, 0 }, {  0.0, 1, 1 }));
+    lights.emplace_back(Light(LightType::POINT, { -6, 1, 4 }, { 1.00, 0.05, 0.95 }));
     lights.back().SetIntensity(2.5f);
-    lights.emplace_back(Light(LightType::POINT, {  0, 1, 0 }, {  0.0, 1, 0 }));
+    lights.emplace_back(Light(LightType::POINT, { -6, 0, -4 }, { 0.00, 0.05, 1.0 }));
+    lights.back().SetIntensity(2.5f);
+    lights.emplace_back(Light(LightType::POINT, { -6, 1, -4 }, { 0.05, 1.00, 0.25 }));
+    lights.back().SetIntensity(2.5f);
+
+    lights.emplace_back(Light(LightType::POINT, { -1, 1, 2 }, { 0.05, 0.35, 0.65 }));
+    lights.back().SetIntensity(1.5f);
+    lights.emplace_back(Light(LightType::POINT, { -1, -1, 2 }, { 0.5, 0.5, 0.95 }));
+    lights.back().SetIntensity(1.5f);
+    lights.emplace_back(Light(LightType::POINT, { 1, 1, -2 }, { 1.05, 0.35, 0.65 }));
+    lights.emplace_back(Light(LightType::POINT, { 1, -1, -2 }, { 1.05, 0.35, 0.65 }));
     lights.back().SetIntensity(1.5f);
 
+
+    lights.emplace_back(Light(LightType::POINT, { 2, 1, 6 }, { 0.5, 0.55, 0.65 }));
+    lights.emplace_back(Light(LightType::POINT, { 6, -1, 2 }, { 0.95, 0.00, 0.25 }));
+    lights.back().SetIntensity(1.5f);
+    lights.emplace_back(Light(LightType::POINT, { 6, 0, 4 }, { 0.55, 0.80, 0.25 }));
+    lights.back().SetIntensity(3.5f);
+    lights.emplace_back(Light(LightType::POINT, { 6, 0, 2 }, { 1.0, 0.05, 0.9 }));
+    lights.back().SetIntensity(2.0f);
+    lights.emplace_back(Light(LightType::POINT, { 2, -1, 0 }, { 0.75, 0.15, 0.15 }));
+    lights.emplace_back(Light(LightType::POINT, { -2, 0, 0 }, { 1.0, 0, 1 }));
+    lights.back().SetIntensity(2.5f);
+    lights.emplace_back(Light(LightType::POINT, { 2, 0, 0 }, { 0.0, 1, 1 }));
+    lights.back().SetIntensity(2.5f);
+    lights.emplace_back(Light(LightType::POINT, { 0, 1, 0 }, { 0.0, 1, 0 }));
+    lights.back().SetIntensity(1.5f);
+    
+    #pragma endregion
+
     FramebufferAttachments att{ true, true, true, true };
-    gBufferFbo = std::make_shared<Framebuffer>(att, displaySize.x, displaySize.y);
+    gBufferFbo = std::make_shared<Framebuffer>(att, viewportSize.x, viewportSize.y);
 
     FramebufferAttachments att2{ true, false, false, false };
-    deferredPassFbo = std::make_shared<Framebuffer>(att, displaySize.x, displaySize.y);
+    deferredPassFbo = std::make_shared<Framebuffer>(att, viewportSize.x, viewportSize.y);
     
     currentRenderTargetId = 0;
 
@@ -124,8 +154,8 @@ void Application::Init()
     //SetShaderUniforms(this, texturedGeometryShaderIdx);
 
     //patrickModel = ModelImporter::ImportModel("Assets/Models/Cerberus 2/Cerberus_LP.FBX");
-    patrickModel = ModelImporter::ImportModel("Assets/Models/Cerberus/Cerberus.fbx");
-    //patrickModel = ModelImporter::ImportModel("Assets/Models/Patrick/Patrick.obj");
+    //patrickModel = ModelImporter::ImportModel("Assets/Models/Cerberus/Cerberus.fbx");
+    patrickModel = ModelImporter::ImportModel("Assets/Models/Patrick/Patrick.obj");
 
     Entity m1 = Entity("Right Patrick", patrickModel);
     m1.SetPosition({ 6,0,0 });
@@ -180,9 +210,6 @@ void Application::Init()
 void Application::Update()
 {
     camera.Update(deltaTime);
-
-    //auto a = Input::GetMousePosition();
-    //std::cout << a.x << " " << a.y << std::endl;
 
     globalParamsUbo->Map();
     {
@@ -576,4 +603,12 @@ void Application::OnImGuiRender()
 
     //dirLight.OnImGuiRender();
 
+}
+
+void Application::OnWindowResized(const glm::vec2& dimensions)
+{
+    gBufferFbo->Resize(dimensions.x, dimensions.y);
+    glViewport(0, 0, dimensions.x, dimensions.y);
+    camera.SetViewportSize((uint32_t)dimensions.x, (uint32_t)dimensions.y);
+    viewportSize = { dimensions.x, dimensions.y };
 }

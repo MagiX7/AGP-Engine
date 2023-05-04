@@ -104,8 +104,8 @@ void OnGlfwCharEvent(GLFWwindow* window, unsigned int character)
 
 void OnGlfwResizeFramebuffer(GLFWwindow* window, int width, int height)
 {
-    Application* app = (Application*)glfwGetWindowUserPointer(window);
-    app->SetDisplaySize(vec2(width, height));
+    //Application* app = (Application*)glfwGetWindowUserPointer(window);
+    //app->OnWindowResized(vec2(width, height));
 }
 
 void OnGlfwCloseWindow(GLFWwindow* window)
@@ -118,7 +118,7 @@ int main()
 {
     Application app = {};
     app.SetDeltaTime(1.0f / 60.0f);
-    app.SetDisplaySize(ivec2(WINDOW_WIDTH, WINDOW_HEIGHT));
+    app.SetViewportSize(ivec2(WINDOW_WIDTH, WINDOW_HEIGHT));
     app.isRunning = true;
 
     glfwSetErrorCallback(OnGlfwError);

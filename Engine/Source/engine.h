@@ -82,12 +82,13 @@ public:
     void Render();
     void OnImGuiRender();
 
+    void OnWindowResized(const glm::vec2& dimensions);
+
     inline float GetDeltaTime() const { return deltaTime; }
     inline void SetDeltaTime(float dt) { deltaTime = dt; }
-    //inline const Input& GetInput() const { return input; }
-    //inline Input& GetInput() { return input; }
-    inline const glm::ivec2& GetDisplaySize() const { return displaySize; }
-    inline void SetDisplaySize(const glm::ivec2& size) { displaySize = size; }
+    
+    inline const glm::vec2& GetViewportSize() const { return viewportSize; }
+    inline void SetViewportSize(const glm::vec2& size) { viewportSize = size; }
 
     inline RenderPath GetRenderPath() { return renderPath; }
 
@@ -120,7 +121,7 @@ private:
     char gpuName[64];
     char openGlVersion[64];
 
-    ivec2 displaySize;
+    //ivec2 displaySize;
 
     std::vector<Texture>  textures;
     std::vector<Material> materials;
