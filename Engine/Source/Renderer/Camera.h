@@ -36,7 +36,7 @@ public:
 	glm::vec3& GetRotation() { return rotation; }
 	void SetRotation(glm::vec3 value) { rotation = value; ReCalculateMatrices(); }
 
-	inline const glm::vec3& GetDirection()const { return direction; }
+	//inline const glm::vec3& GetDirection()const { return direction; }
 	inline const glm::vec3& GetUp() const { return up; }
 	void SetUp(const glm::vec3& newUp) { up = newUp; ReCalculateMatrices(); }
 	inline const glm::vec3& GetRight() const { return right; }
@@ -56,7 +56,9 @@ private:
 
 	glm::vec3 position = glm::vec3(0);
 	glm::vec3 rotation = glm::vec3(0);
-	glm::vec3 direction = glm::vec3(0);
+	float yaw = 0, pitch = 0;
+
+	//glm::vec3 direction = glm::vec3(0);
 	glm::vec3 up = glm::vec3(0);
 	glm::vec3 right = glm::vec3(0);
 	glm::vec3 forward = glm::vec3(0);

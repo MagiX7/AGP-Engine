@@ -257,7 +257,7 @@ void Application::Render()
     gBufferFbo->Bind();
     glEnable(GL_DEPTH_TEST);
 
-    glClearColor(0.08, 0.08, 0.08, 1);
+    glClearColor(0.0, 0.0, 0.0, 1.0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     GLuint buffs[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3 };

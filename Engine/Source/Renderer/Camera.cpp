@@ -3,6 +3,7 @@
 
 #include <glm/gtx/transform.hpp>
 #include <glm/gtx/euler_angles.hpp>
+#include <glm/gtx/quaternion.hpp>
 
 #include <iostream>
 
@@ -74,12 +75,12 @@ void Camera::Update(float dt)
 		glm::vec2 delta = mousePos - lastMousePos;
 		if (delta.x != 0)
 		{
-			rotation.y -= delta.x * dt * 0.1f;
+			pitch += delta.x * dt * 0.1f;
 			recalc = true;
 		}
 		if (delta.y != 0)
 		{
-			rotation.x -= delta.y * dt * 0.1f;
+			yaw += /*(up.y > 0.0f ? 1.0f : -1.0f) **/ delta.y * dt * 0.1f;
 			recalc = true;
 		}
 	
@@ -101,10 +102,11 @@ void Camera::SetViewportSize(uint32_t width, uint32_t height)
 void Camera::ReCalculateMatrices()
 {
 	proj = glm::perspective(glm::radians(yFov), aspectRatio, nearClip, farClip);
-	const glm::mat4 transform = glm::translate(glm::mat4(1.0), position) * glm::eulerAngleXYZ(rotation.x, rotation.y, rotation.z);
+	//const glm::mat4 transform = glm::translate(glm::mat4(1.0), position) * glm::eulerAngleXYZ(rotation.x, rotation.y, rotation.z);
+	const glm::mat4 transform = glm::translate(glm::mat4(1.0), position) * glm::toMat4(glm::quat(glm::vec3(-yaw, -pitch, 0.0)));
 	view = glm::inverse(transform);
 
-	direction = glm::normalize(position - target);
+	glm::vec3 direction = glm::normalize(position - target);
 	right = glm::normalize(glm::cross({ 0,1,0 }, direction));
 	up = glm::cross(direction, right);
 	forward = glm::normalize(glm::cross(up, right));

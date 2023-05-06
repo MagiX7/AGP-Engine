@@ -99,8 +99,8 @@ void main()
 		case 0:
 		{
 			// If background, discard
-			if (texture2D(uDepthTexture, vTexCoords).x == 1.0)
-				discard;
+			//if (texture2D(uDepthTexture, vTexCoords).x == 1.0)
+			//	discard;
 
 			// Retrieve data from textures
 			vec3 position = texture2D(uPositionTexture, vTexCoords).xyz;
