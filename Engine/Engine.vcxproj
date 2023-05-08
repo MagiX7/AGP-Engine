@@ -43,7 +43,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
@@ -159,7 +159,6 @@
     <ClCompile Include="Dependencies\stb\stb.cpp" />
     <ClCompile Include="Source\Engine.cpp" />
     <ClCompile Include="Source\Entity.cpp" />
-    <ClCompile Include="Source\Input.cpp" />
     <ClCompile Include="Source\Light.cpp" />
     <ClCompile Include="Source\ModelImporter.cpp" />
     <ClCompile Include="Source\Platform.cpp" />
@@ -189,7 +188,6 @@
     <ClInclude Include="Dependencies\stb\stb_image_write.h" />
     <ClInclude Include="Source\Engine.h" />
     <ClInclude Include="Source\Entity.h" />
-    <ClInclude Include="Source\Input.h" />
     <ClInclude Include="Source\Light.h" />
     <ClInclude Include="Source\ModelImporter.h" />
     <ClInclude Include="Source\Renderer\Buffer.h" />

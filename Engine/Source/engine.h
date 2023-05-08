@@ -102,7 +102,7 @@ private:
 
 public:
     bool isRunning;
-    //Input input;
+    Input input;
 
 private:
     static Application* instance;

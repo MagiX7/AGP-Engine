@@ -1,6 +1,5 @@
 #include "Engine.h"
 #include "ModelImporter.h"
-#include "Input.h"
 #include "Renderer/Shader.h"
 #include "Renderer/Framebuffer.h"
 
@@ -152,8 +151,7 @@ void Application::Init()
     postProcessShader = std::make_shared<Shader>("Assets/Shaders/post_process.glsl", "POST_PROCESS");
 
     //SetShaderUniforms(this, texturedGeometryShaderIdx);
-
-    //patrickModel = ModelImporter::ImportModel("Assets/Models/Cerberus 2/Cerberus_LP.FBX");
+    
     //patrickModel = ModelImporter::ImportModel("Assets/Models/Cerberus/Cerberus.fbx");
     patrickModel = ModelImporter::ImportModel("Assets/Models/Patrick/Patrick.obj");
 
@@ -175,6 +173,7 @@ void Application::Init()
     localParamsUbo = std::make_shared<UniformBuffer>(maxUniformBufferSize, uniformBlockAlignment);
     globalParamsUbo = std::make_shared<UniformBuffer>(maxUniformBufferSize, uniformBlockAlignment);
 
+    #pragma region Screen Space Buffers
 
     glGenBuffers(1, &screenSpaceVbo);
     glBindBuffer(GL_ARRAY_BUFFER, screenSpaceVbo);
@@ -195,6 +194,7 @@ void Application::Init()
     glEnableVertexAttribArray(1);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, screenSpaceIbo);
     glBindVertexArray(0);
+#pragma endregion
 
     diceTex = std::make_shared<Texture2D>("Assets/Textures/dice.png");
     glEnable(GL_BLEND);

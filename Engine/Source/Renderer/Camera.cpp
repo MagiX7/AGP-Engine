@@ -1,5 +1,6 @@
 #include "Camera.h"
-#include "../Input.h"
+#include "../Engine.h"
+//#include "../Input.h"
 
 #include <glm/gtx/transform.hpp>
 #include <glm/gtx/euler_angles.hpp>
@@ -26,53 +27,53 @@ Camera::~Camera()
 void Camera::Update(float dt)
 {
 	static glm::vec2 lastMousePos = { 0,0 };
-	glm::vec2 mousePos = Input::GetMousePosition();
+	auto& input = Application::GetInstance().input;
 
 	bool recalc = false;
-	if (Input::IsMouseButtonPressed(MouseButton::MOUSE_BUTTON_RIGHT))
+	if (input.mouseButtons[MouseButton::RIGHT] == BUTTON_PRESS)
 	{
 		float speed = CAMERA_SPEED;
-		if (Input::IsKeyPressed(KeyCode::KEY_LEFT_SHIFT))
+		if (input.keys[K_LEFT_SHIFT])
 			speed *= 2.0f;
 
-		if (Input::IsKeyPressed(KeyCode::KEY_W))
+		if (input.keys[K_W] == BUTTON_PRESS)
 		{
 			position += forward * dt * speed;
 			recalc = true;
 		}
 
-		if (Input::IsKeyPressed(KeyCode::KEY_S))
+		if (input.keys[K_S] == BUTTON_PRESS)
 		{
 			position -= forward * dt * speed;
 			recalc = true;
 		}
 
-		if (Input::IsKeyPressed(KeyCode::KEY_A))
+		if (input.keys[K_A] == BUTTON_PRESS)
 		{
 			position -= right * dt * speed;
 			recalc = true;
 		}
 
-		if (Input::IsKeyPressed(KeyCode::KEY_D))
+		if (input.keys[K_D] == BUTTON_PRESS)
 		{
 			position += right * dt * speed;
 			recalc = true;
 		}
 
-		if (Input::IsKeyPressed(KeyCode::KEY_E))
+		if (input.keys[K_E] == BUTTON_PRESS)
 		{
 			position.y += dt * speed;
 			recalc = true;
 		}
 
-		if (Input::IsKeyPressed(KeyCode::KEY_Q))
+		if (input.keys[K_Q] == BUTTON_PRESS)
 		{
 			position.y -= dt * speed;
 			recalc = true;
 		}
 
 
-		glm::vec2 delta = mousePos - lastMousePos;
+		glm::vec2 delta = input.mousePos - lastMousePos;
 		if (delta.x != 0)
 		{
 			pitch += delta.x * dt * 0.1f;
@@ -83,11 +84,9 @@ void Camera::Update(float dt)
 			yaw += /*(up.y > 0.0f ? 1.0f : -1.0f) **/ delta.y * dt * 0.1f;
 			recalc = true;
 		}
-	
-		std::cout << delta.x << ", " << delta.y << std::endl;
 	}
 
-	lastMousePos = mousePos;
+	lastMousePos = input.mousePos;
 
 	if (recalc)
 		ReCalculateMatrices();
