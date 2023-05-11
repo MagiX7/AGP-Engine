@@ -24,13 +24,13 @@ void Material::Bind()
 		if (albedoMap)
 		{
 			albedoMap->Bind(0);
-			shader->SetUniform1i("albedoMap", 0);
+			shader->SetUniform1i("uAlbedoMap", 0);
 		}
 
 		if (normalMap)
 		{
 			normalMap->Bind(1);
-			shader->SetUniform1i("normalMap", 1);
+			shader->SetUniform1i("uNormalMap", 1);
 		}
 	}
 	//else

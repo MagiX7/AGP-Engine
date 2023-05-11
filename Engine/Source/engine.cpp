@@ -156,6 +156,7 @@ void Application::Init()
     //SetShaderUniforms(this, texturedGeometryShaderIdx);
     
     //patrickModel = ModelImporter::ImportModel("Assets/Models/Cerberus/Cerberus.fbx");
+    //patrickModel->GetFirstMaterial()->SetNormalMap(std::make_shared<Texture2D>("Assets/Models/Cerberus/Textures/N.tga.png"));
     patrickModel = ModelImporter::ImportModel("Assets/Models/Patrick/Patrick.obj");
     sphereModel = ModelImporter::ImportModel("Assets/Models/Sphere.fbx");
     planeModel = ModelImporter::ImportModel("Assets/Models/Plane.fbx");

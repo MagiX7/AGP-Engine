@@ -35,6 +35,9 @@ void main()
 	vNormals = (model * vec4(aNormals, 0)).xyz;
 	vPosition = aPosition;
 	vWorldPosition = (model * vec4(aPosition, 1)).xyz;
+
+
+
 }
 
 #elif defined(FRAGMENT) ///////////////////////////////////////////////
@@ -58,8 +61,9 @@ layout(binding = 0, std140) uniform GlobalParams
 };
 
 
-layout(location = 0) uniform sampler2D uTexture;
-uniform float smoothness;
+layout(location = 0) uniform sampler2D uAlbedoMap;
+layout(location = 1) uniform sampler2D uNormalMap;
+uniform int hasNormalMap;
 
 in vec3 vPosition;
 in vec3 vWorldPosition;
@@ -125,26 +129,30 @@ void main()
 {
 	vec4 col = vec4(0);
 	
+	vec3 normal = normalize((texture2D(uNormalMap, vTexCoords).rgb * 2.0 - 1.0) * hasNormalMap
+					+ vNormals * 1.0 - hasNormalMap);
+
 	// Forward
 	if (renderMode == 0)
 	{
-		vec4 tex = texture2D(uTexture, vTexCoords);
+		vec4 tex = texture2D(uAlbedoMap, vTexCoords);
 		//col = vec4(lightCol, 1) * tex;
 
 		vec3 lightColor = vec3(0);
 		vec3 viewDir = normalize(uCamPos - vPosition);
+
 
 		for (int i = 0; i < uLightCount; ++i)
 		{
 			// Directional
 			if (uLights[i].type == 0)
 			{
-				lightColor += CalcDirLight(uLights[i], vNormals, viewDir);
+				lightColor += CalcDirLight(uLights[i], normal, viewDir);
 			}
 			// Point
 			else if (uLights[i].type == 1)
 			{
-				lightColor += CalcPointLight(uLights[i], vNormals, vWorldPosition, viewDir);
+				lightColor += CalcPointLight(uLights[i], normal, vWorldPosition, viewDir);
 			}
 		}
 
@@ -155,12 +163,12 @@ void main()
 	else
 	{
 		// If deferred, just output the albedo
-		col = texture2D(uTexture, vTexCoords);
+		col = texture2D(uAlbedoMap, vTexCoords);
 		//col.a = smoothness;
 	}
 
 	fragColor = col;
-	normalsColor = vec4(vNormals, 1);
+	normalsColor = vec4(normal, 1);
 	positionColor = vec4(vWorldPosition, 1);
 
 	float depth = LinearizeDepth(gl_FragCoord.z) / uFar;
