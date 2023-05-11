@@ -160,7 +160,8 @@ private:
     glm::vec2 viewportSize = glm::vec2(0);
 
     std::shared_ptr<Model> sphereModel;
-    std::shared_ptr<Shader> sphereShader;
+    std::shared_ptr<Model> planeModel;
+    std::shared_ptr<Shader> debugLightShader;
     bool debugDrawLights = true;
 
     std::shared_ptr<Model> patrickModel;

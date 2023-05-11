@@ -7,6 +7,8 @@
 #include <stb_image.h>
 #include <stb_image_write.h>
 
+#include <glm/gtx/euler_angles.hpp>
+
 #include <iostream>
 
 
@@ -149,13 +151,14 @@ void Application::Init()
     texturedGeometryShader = std::make_shared<Shader>("Assets/Shaders/shaders.glsl", "TEXTURED_GEOMETRY");
     deferredPassShader = std::make_shared<Shader>("Assets/Shaders/deferred_pass.glsl", "DEFERRED");
     postProcessShader = std::make_shared<Shader>("Assets/Shaders/post_process.glsl", "POST_PROCESS");
-    sphereShader = std::make_shared<Shader>("Assets/Shaders/sphere_light.glsl", "SPHERE_LIGHT");
+    debugLightShader = std::make_shared<Shader>("Assets/Shaders/sphere_light.glsl", "SPHERE_LIGHT");
 
     //SetShaderUniforms(this, texturedGeometryShaderIdx);
     
     //patrickModel = ModelImporter::ImportModel("Assets/Models/Cerberus/Cerberus.fbx");
     patrickModel = ModelImporter::ImportModel("Assets/Models/Patrick/Patrick.obj");
     sphereModel = ModelImporter::ImportModel("Assets/Models/Sphere.fbx");
+    planeModel = ModelImporter::ImportModel("Assets/Models/Plane.fbx");
     
 
     Entity m1 = Entity("Right Patrick", patrickModel);
@@ -299,22 +302,37 @@ void Application::Render()
                 glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 2, -1, "Debug Light Spheres");
 
                 glm::mat4 scale = glm::scale(glm::mat4(1.0), glm::vec3(0.5f));
+                // Initialized after declaration because otherwise it keeps adding to the position.
+                // This way it resets every frame.
+                static float offset;
+                offset = 0;
                 for (auto& light : lights)
                 {
-                    sphereShader->Bind();
-                    glm::mat4 transform = glm::translate(glm::mat4(1.0), light.GetPosition()) * scale;
-                    sphereShader->SetUniformMatrix4f("model", transform);
-                    sphereShader->SetUniformMatrix4f("viewProj", camera.GetViewProj());
-                    sphereShader->SetUniformVec3f("lightColor", light.GetDiffuse());
+                    debugLightShader->Bind();
+                    debugLightShader->SetUniformMatrix4f("viewProj", camera.GetViewProj());
+                    debugLightShader->SetUniformVec3f("lightColor", light.GetDiffuse());
                     if (light.GetType() == LightType::DIRECTIONAL)
                     {
                         // Draw Quad
+                        glm::vec3 dirLightPos = glm::vec3(-1 + offset, 4, 0);
+                        glm::vec3 rot = light.GetPosition();
+                        glm::mat4 transform = glm::translate(glm::mat4(1.0), dirLightPos)
+                            * glm::eulerAngleXYZ(rot.x, rot.y, rot.z)
+                            * scale;
+
+                        debugLightShader->SetUniformMatrix4f("model", transform);
+
+                        planeModel->Draw(false);
+                        offset += 2.0f;
                     }
-                    else if(light.GetType() == LightType::POINT)
+                    else if (light.GetType() == LightType::POINT)
                     {
+                        glm::mat4 transform = glm::translate(glm::mat4(1.0), light.GetPosition()) * scale;
+                        debugLightShader->SetUniformMatrix4f("model", transform);
+
                         sphereModel->Draw(false);
                     }
-                    sphereShader->Unbind();
+                    debugLightShader->Unbind();
                 }
 
                 glPopDebugGroup();
