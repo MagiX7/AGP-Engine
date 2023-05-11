@@ -7,8 +7,8 @@
 #include <iostream>
 #include <fstream>
 
-Shader::Shader(const std::string& filePath, const std::string& OldShaderName)
-	: path(filePath), name(OldShaderName)
+Shader::Shader(const std::string& filePath, const std::string& shaderName)
+	: path(filePath), name(shaderName)
 {
 	source = ReadFile();
 	ConstructShader();
@@ -109,7 +109,7 @@ std::string Shader::ReadFile()
 	}
 	else
 	{
-		std::cout << "Could not locate the OldShader: " << path << std::endl;
+		std::cout << "Could not locate the Shader: " << path << std::endl;
 	}
 
 	return ret;
@@ -123,33 +123,33 @@ void Shader::ConstructShader()
     GLint   success;
 
     char versionString[] = "#version 430\n";
-    char OldShaderNameDefine[128];
-    sprintf(OldShaderNameDefine, "#define %s\n", name.c_str());
-    char vertexOldShaderDefine[] = "#define VERTEX\n";
-    char fragmentOldShaderDefine[] = "#define FRAGMENT\n";
+    char shaderNameDefine[128];
+    sprintf(shaderNameDefine, "#define %s\n", name.c_str());
+    char vertexShaderDefine[] = "#define VERTEX\n";
+    char fragmentShaderDefine[] = "#define FRAGMENT\n";
 
     const GLchar* vertexShaderSource[] = {
         versionString,
-        OldShaderNameDefine,
-        vertexOldShaderDefine,
+        shaderNameDefine,
+        vertexShaderDefine,
         source.c_str()
     };
     const GLint vertexShaderLengths[] = {
         (GLint)strlen(versionString),
-        (GLint)strlen(OldShaderNameDefine),
-        (GLint)strlen(vertexOldShaderDefine),
+        (GLint)strlen(shaderNameDefine),
+        (GLint)strlen(vertexShaderDefine),
         (GLint)source.size()
     };
     const GLchar* fragmentShaderSource[] = {
         versionString,
-        OldShaderNameDefine,
-        fragmentOldShaderDefine,
+        shaderNameDefine,
+        fragmentShaderDefine,
         source.c_str()
     };
     const GLint fragmentShaderLengths[] = {
         (GLint)strlen(versionString),
-        (GLint)strlen(OldShaderNameDefine),
-        (GLint)strlen(fragmentOldShaderDefine),
+        (GLint)strlen(shaderNameDefine),
+        (GLint)strlen(fragmentShaderDefine),
         (GLint)source.size()
     };
 
@@ -191,6 +191,6 @@ void Shader::ConstructShader()
     glDeleteShader(vShader);
     glDeleteShader(fShader);
 
-    std::cout << name << " OldShader loaded successfully." << std::endl;
+    std::cout << name << " Shader loaded successfully." << std::endl;
 
 }

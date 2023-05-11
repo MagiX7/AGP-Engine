@@ -6,7 +6,7 @@
 class Shader
 {
 public:
-	Shader(const std::string& filePath, const std::string& name);
+	Shader(const std::string& filePath, const std::string& shaderName);
 	virtual ~Shader();
 
 	void Bind();

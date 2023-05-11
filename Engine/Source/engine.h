@@ -159,6 +159,10 @@ private:
     std::shared_ptr<Framebuffer> deferredPassFbo;
     glm::vec2 viewportSize = glm::vec2(0);
 
+    std::shared_ptr<Model> sphereModel;
+    std::shared_ptr<Shader> sphereShader;
+    bool debugDrawLights = true;
+
     std::shared_ptr<Model> patrickModel;
     std::shared_ptr<Shader> patrickShader;
     std::shared_ptr<Texture2D> patrickTexture;

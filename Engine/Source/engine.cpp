@@ -133,7 +133,7 @@ void Application::Init()
     lights.back().SetIntensity(2.5f);
     lights.emplace_back(Light(LightType::POINT, { 2, 0, 0 }, { 0.0, 1, 1 }));
     lights.back().SetIntensity(2.5f);
-    lights.emplace_back(Light(LightType::POINT, { 0, 1, 0 }, { 0.0, 1, 0 }));
+    lights.emplace_back(Light(LightType::POINT, { 0, 3, 0 }, { 0.0, 0.9, 0 }));
     lights.back().SetIntensity(1.5f);
     
     #pragma endregion
@@ -149,11 +149,14 @@ void Application::Init()
     texturedGeometryShader = std::make_shared<Shader>("Assets/Shaders/shaders.glsl", "TEXTURED_GEOMETRY");
     deferredPassShader = std::make_shared<Shader>("Assets/Shaders/deferred_pass.glsl", "DEFERRED");
     postProcessShader = std::make_shared<Shader>("Assets/Shaders/post_process.glsl", "POST_PROCESS");
+    sphereShader = std::make_shared<Shader>("Assets/Shaders/sphere_light.glsl", "SPHERE_LIGHT");
 
     //SetShaderUniforms(this, texturedGeometryShaderIdx);
     
     //patrickModel = ModelImporter::ImportModel("Assets/Models/Cerberus/Cerberus.fbx");
     patrickModel = ModelImporter::ImportModel("Assets/Models/Patrick/Patrick.obj");
+    sphereModel = ModelImporter::ImportModel("Assets/Models/Sphere.fbx");
+    
 
     Entity m1 = Entity("Right Patrick", patrickModel);
     m1.SetPosition({ 6,0,0 });
@@ -223,6 +226,7 @@ void Application::Update()
         globalParamsUbo->Push1i(lights.size());
         for (auto& light : lights)
         {
+            globalParamsUbo->AlignHead(sizeof(glm::vec4));
             globalParamsUbo->Push1i((int)light.GetType());
             globalParamsUbo->PushVector3f(light.GetDiffuse());
             globalParamsUbo->PushVector3f(light.GetPosition());
@@ -289,6 +293,34 @@ void Application::Render()
                 localParamsUbo->BindRange(1, entity.localParamsOffset, entity.localParamsSize);
                 entity.GetModel()->Draw(true);
             }
+
+            if (debugDrawLights)
+            {
+                glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 2, -1, "Debug Light Spheres");
+
+                glm::mat4 scale = glm::scale(glm::mat4(1.0), glm::vec3(0.5f));
+                for (auto& light : lights)
+                {
+                    sphereShader->Bind();
+                    glm::mat4 transform = glm::translate(glm::mat4(1.0), light.GetPosition()) * scale;
+                    sphereShader->SetUniformMatrix4f("model", transform);
+                    sphereShader->SetUniformMatrix4f("viewProj", camera.GetViewProj());
+                    sphereShader->SetUniformVec3f("lightColor", light.GetDiffuse());
+                    if (light.GetType() == LightType::DIRECTIONAL)
+                    {
+                        // Draw Quad
+                    }
+                    else if(light.GetType() == LightType::POINT)
+                    {
+                        sphereModel->Draw(false);
+                    }
+                    sphereShader->Unbind();
+                }
+
+                glPopDebugGroup();
+            }
+
+
             glPopDebugGroup();
 
             break;
@@ -302,7 +334,7 @@ void Application::Render()
 
     if (renderPath == RenderPath::DEFERRED)
     {
-        glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 2, -1, "Deferred pass");
+        glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 3, -1, "Deferred pass");
         
         deferredPassFbo->Bind();
         glClearColor(0.08, 0.08, 0.08, 1);
@@ -340,7 +372,7 @@ void Application::Render()
 
     }
 
-    glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 3, -1, "Post-Processing Pass");
+    glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 4, -1, "Post-Processing Pass");
 
     postProcessShader->Bind();
     glDisable(GL_DEPTH_TEST);
@@ -390,6 +422,7 @@ void Application::OnImGuiRender()
             {
 
             }
+            if (ImGui::Checkbox("Debug Lights", &debugDrawLights));
             ImGui::EndMenu();
         }
         if (ImGui::BeginMenu("Renderer"))
