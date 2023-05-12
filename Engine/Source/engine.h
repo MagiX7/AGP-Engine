@@ -109,6 +109,7 @@ private:
     RenderPath renderPath;
 
     bool showRenderOptionsPanel = true;
+    bool showExtensionsPanel = false;
     unsigned int currentRenderTargetId;
 
     // Loop
@@ -163,6 +164,7 @@ private:
     std::shared_ptr<Model> planeModel;
     std::shared_ptr<Shader> debugLightShader;
     bool debugDrawLights = true;
+    float sphereLightsSize = 0.25f;
 
     std::shared_ptr<Model> patrickModel;
     std::shared_ptr<Shader> patrickShader;

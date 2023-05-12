@@ -114,6 +114,14 @@ void Application::Init()
     lights.emplace_back(Light(LightType::POINT, { -6, 1, -4 }, { 0.05, 1.00, 0.25 }));
     lights.back().SetIntensity(2.5f);
 
+    lights.emplace_back(Light(LightType::POINT, { 6, 0, -4 }, { 1.00, 0.65, 0.30 }));
+    lights.back().SetIntensity(2.5f);
+    lights.emplace_back(Light(LightType::POINT, { 7.5, 0.2, -1 }, { 0.10, 0.10, 0.60 }));
+    lights.back().SetIntensity(1.5f);
+    lights.emplace_back(Light(LightType::POINT, { 6.7, 1.2, -.75 }, { 0.4, 0.4, 0.4 }));
+    //lights.back().SetIntensity(1.5f);
+
+
     lights.emplace_back(Light(LightType::POINT, { -1, 1, 2 }, { 0.05, 0.35, 0.65 }));
     lights.back().SetIntensity(1.5f);
     lights.emplace_back(Light(LightType::POINT, { -1, -1, 2 }, { 0.5, 0.5, 0.95 }));
@@ -133,7 +141,7 @@ void Application::Init()
     lights.emplace_back(Light(LightType::POINT, { 2, -1, 0 }, { 0.75, 0.15, 0.15 }));
     lights.emplace_back(Light(LightType::POINT, { -2, 0, 0 }, { 1.0, 0, 1 }));
     lights.back().SetIntensity(2.5f);
-    lights.emplace_back(Light(LightType::POINT, { 2, 0, 0 }, { 0.0, 1, 1 }));
+    lights.emplace_back(Light(LightType::POINT, { 2, 0.5, 0 }, { 0.0, 1, 1 }));
     lights.back().SetIntensity(2.5f);
     lights.emplace_back(Light(LightType::POINT, { 0, 3, 0 }, { 0.0, 0.9, 0 }));
     lights.back().SetIntensity(1.5f);
@@ -300,13 +308,20 @@ void Application::Render()
 
             if (debugDrawLights)
             {
+                // Disable Cull face because at some orientations dir light's quad are culled and can't be seen
+                // And depth testing because we don't want it to be in the depth buffer
+                glDisable(GL_CULL_FACE);
+                glDepthMask(GL_FALSE);
+
                 glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 2, -1, "Debug Light Spheres");
 
-                glm::mat4 scale = glm::scale(glm::mat4(1.0), glm::vec3(0.5f));
+                glm::mat4 sphereScale = glm::scale(glm::mat4(1.0), glm::vec3(sphereLightsSize));
+
                 // Initialized after declaration because otherwise it keeps adding to the position.
                 // This way it resets every frame.
                 static float offset;
                 offset = 0;
+                
                 for (auto& light : lights)
                 {
                     debugLightShader->Bind();
@@ -318,8 +333,7 @@ void Application::Render()
                         glm::vec3 dirLightPos = glm::vec3(-1 + offset, 4, 0);
                         glm::vec3 rot = light.GetPosition();
                         glm::mat4 transform = glm::translate(glm::mat4(1.0), dirLightPos)
-                            * glm::eulerAngleXYZ(rot.x, rot.y, rot.z)
-                            * scale;
+                            * glm::eulerAngleXYZ(rot.x, rot.y, rot.z);
 
                         debugLightShader->SetUniformMatrix4f("model", transform);
 
@@ -328,7 +342,8 @@ void Application::Render()
                     }
                     else if (light.GetType() == LightType::POINT)
                     {
-                        glm::mat4 transform = glm::translate(glm::mat4(1.0), light.GetPosition()) * scale;
+                        // Draw Sphere
+                        glm::mat4 transform = glm::translate(glm::mat4(1.0), light.GetPosition()) * sphereScale;
                         debugLightShader->SetUniformMatrix4f("model", transform);
 
                         sphereModel->Draw(false);
@@ -336,9 +351,11 @@ void Application::Render()
                     debugLightShader->Unbind();
                 }
 
+                glDepthMask(GL_TRUE);
+                glEnable(GL_CULL_FACE);
+
                 glPopDebugGroup();
             }
-
 
             glPopDebugGroup();
 
@@ -439,9 +456,15 @@ void Application::OnImGuiRender()
         {
             if (ImGui::MenuItem("Extensions"))
             {
-
+                showExtensionsPanel = true;
             }
-            if (ImGui::Checkbox("Debug Lights", &debugDrawLights));
+            if (ImGui::BeginMenu("Lights"))
+            {
+                ImGui::Checkbox("Debug Lights", &debugDrawLights);
+                ImGui::DragFloat("Sphere Size", &sphereLightsSize, 0.01f, 0.0f, 1.0f);
+
+                ImGui::EndMenu();
+            }
             ImGui::EndMenu();
         }
         if (ImGui::BeginMenu("Renderer"))
@@ -519,6 +542,39 @@ void Application::OnImGuiRender()
         ImGui::End();
     }
 
+    if (showExtensionsPanel)
+    {
+        ImGui::Begin("OpenGL Information", &showExtensionsPanel);
+        
+        const char* version = reinterpret_cast<const char*>(glGetString(GL_VERSION));
+        ImGui::Text(std::string("Version: " + std::string(version)).c_str());
+
+        const char* vendor = reinterpret_cast<const char*>(glGetString(GL_VENDOR));
+        ImGui::Text(std::string("Vendor: " + std::string(vendor)).c_str());
+
+        const char* renderer = reinterpret_cast<const char*>(glGetString(GL_RENDERER));
+        ImGui::Text(std::string("Renderer: " + std::string(renderer)).c_str());
+
+        const char* glslVersion = reinterpret_cast<const char*>(glGetString(GL_SHADING_LANGUAGE_VERSION));
+        ImGui::Text(std::string("GLSL Version: " + std::string(glslVersion)).c_str());
+
+        if (ImGui::TreeNodeEx("Extensions:"))
+        {
+            GLint numExt = -1;
+            glGetIntegerv(GL_NUM_EXTENSIONS, &numExt);
+            for (int i = 0; i < numExt; ++i)
+            {
+                const unsigned char* ext = glGetStringi(GL_EXTENSIONS, (GLuint)i);
+                ImGui::Indent();
+                ImGui::BulletText((const char*)ext);
+                ImGui::Unindent();
+            }
+            ImGui::TreePop();
+        }
+
+        ImGui::End();
+    }
+
 
     ImGui::Begin("Viewport");
     {
@@ -544,6 +600,7 @@ void Application::OnImGuiRender()
         }
         else
         {
+            // Only one texture is outputted. The checking of the render target is done inside the shader
             id = deferredPassFbo->GetColorAttachment();
         }
         
