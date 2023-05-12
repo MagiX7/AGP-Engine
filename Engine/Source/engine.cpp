@@ -454,7 +454,7 @@ void Application::OnImGuiRender()
     {
         if (ImGui::BeginMenu("View"))
         {
-            if (ImGui::MenuItem("Extensions"))
+            if (ImGui::MenuItem("OpenGL Info"))
             {
                 showExtensionsPanel = true;
             }

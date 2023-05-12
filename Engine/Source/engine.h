@@ -109,7 +109,7 @@ private:
     RenderPath renderPath;
 
     bool showRenderOptionsPanel = true;
-    bool showExtensionsPanel = false;
+    bool showExtensionsPanel = true;
     unsigned int currentRenderTargetId;
 
     // Loop
