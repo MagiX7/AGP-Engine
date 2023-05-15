@@ -171,8 +171,8 @@ void main()
 	normalsColor = vec4(normal, 1);
 	positionColor = vec4(vWorldPosition, 1);
 
-	float depth = LinearizeDepth(gl_FragCoord.z) / uFar;
-	depthColor = vec4(vec3(depth), 1);
+	//float depth = LinearizeDepth(gl_FragCoord.z) / uFar;
+	//depthColor = vec4(vec3(depth), 1);
 }
 
 #endif

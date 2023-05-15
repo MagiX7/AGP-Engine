@@ -151,9 +151,11 @@ void Application::Init()
     FramebufferAttachments att{ true, true, true, true };
     gBufferFbo = std::make_shared<Framebuffer>(att, viewportSize.x, viewportSize.y);
 
-    FramebufferAttachments att2{ true, false, false, false };
-    deferredPassFbo = std::make_shared<Framebuffer>(att, viewportSize.x, viewportSize.y);
+    FramebufferAttachments att2{ true, false, false, true };
+    deferredPassFbo = std::make_shared<Framebuffer>(att2, viewportSize.x, viewportSize.y);
     
+    postProcessFbo = std::make_shared<Framebuffer>(att2, viewportSize.x, viewportSize.y);
+
     currentRenderTargetId = 0;
 
     texturedGeometryShader = std::make_shared<Shader>("Assets/Shaders/shaders.glsl", "TEXTURED_GEOMETRY");
@@ -276,8 +278,8 @@ void Application::Render()
     glClearColor(0.0, 0.0, 0.0, 1.0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    GLuint buffs[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3 };
-    glDrawBuffers(4, buffs);
+    GLuint buffs[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2/*, GL_COLOR_ATTACHMENT3*/ };
+    glDrawBuffers(3, buffs);
     
     switch (mode)
     {
@@ -306,57 +308,6 @@ void Application::Render()
                 entity.GetModel()->Draw(true);
             }
 
-            if (debugDrawLights)
-            {
-                // Disable Cull face because at some orientations dir light's quad are culled and can't be seen
-                // And depth testing because we don't want it to be in the depth buffer
-                glDisable(GL_CULL_FACE);
-                glDepthMask(GL_FALSE);
-
-                glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 2, -1, "Debug Light Spheres");
-
-                glm::mat4 sphereScale = glm::scale(glm::mat4(1.0), glm::vec3(sphereLightsSize));
-
-                // Initialized after declaration because otherwise it keeps adding to the position.
-                // This way it resets every frame.
-                static float offset;
-                offset = 0;
-                
-                for (auto& light : lights)
-                {
-                    debugLightShader->Bind();
-                    debugLightShader->SetUniformMatrix4f("viewProj", camera.GetViewProj());
-                    debugLightShader->SetUniformVec3f("lightColor", light.GetDiffuse());
-                    if (light.GetType() == LightType::DIRECTIONAL)
-                    {
-                        // Draw Quad
-                        glm::vec3 dirLightPos = glm::vec3(-1 + offset, 4, 0);
-                        glm::vec3 rot = light.GetPosition();
-                        glm::mat4 transform = glm::translate(glm::mat4(1.0), dirLightPos)
-                            * glm::eulerAngleXYZ(rot.x, rot.y, rot.z);
-
-                        debugLightShader->SetUniformMatrix4f("model", transform);
-
-                        planeModel->Draw(false);
-                        offset += 2.0f;
-                    }
-                    else if (light.GetType() == LightType::POINT)
-                    {
-                        // Draw Sphere
-                        glm::mat4 transform = glm::translate(glm::mat4(1.0), light.GetPosition()) * sphereScale;
-                        debugLightShader->SetUniformMatrix4f("model", transform);
-
-                        sphereModel->Draw(false);
-                    }
-                    debugLightShader->Unbind();
-                }
-
-                glDepthMask(GL_TRUE);
-                glEnable(GL_CULL_FACE);
-
-                glPopDebugGroup();
-            }
-
             glPopDebugGroup();
 
             break;
@@ -367,6 +318,8 @@ void Application::Render()
     }
 
     gBufferFbo->Unbind();
+
+    #pragma region Deferred Pass
 
     if (renderPath == RenderPath::DEFERRED)
     {
@@ -399,52 +352,69 @@ void Application::Render()
 
         globalParamsUbo->BindRange(0, globalParamsOffset, globalParamsSize);
 
+        glDisable(GL_DEPTH_TEST);
+
         glDrawBuffer(GL_COLOR_ATTACHMENT0);
         glBindVertexArray(screenSpaceVao);
         glDrawElements(GL_TRIANGLES, sizeof(quadIndices) / sizeof(u16), GL_UNSIGNED_SHORT, 0);
+        
+        glEnable(GL_DEPTH_TEST);
 
         deferredPassFbo->Unbind();
         glPopDebugGroup();
-
     }
 
-    glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 4, -1, "Post-Processing Pass");
+    #pragma endregion
 
-    postProcessShader->Bind();
-    glDisable(GL_DEPTH_TEST);
+    #pragma region Post Processing Pass
+
+    postProcessFbo->Bind();
+    glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 4, -1, "Post-Processing Pass");
 
     glClearColor(0.08, 0.08, 0.08, 1);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    glDrawBuffer(GL_COLOR_ATTACHMENT0);
+    //glDrawBuffer(GL_COLOR_ATTACHMENT0);
 
     postProcessShader->Bind();
     postProcessShader->SetUniform1i("renderTarget", currentRenderTargetId);
     glBindVertexArray(screenSpaceVao);
 
+    bool isDeferred = renderPath == RenderPath::DEFERRED;
+
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, renderPath == RenderPath::DEFERRED ? deferredPassFbo->GetColorAttachment() : gBufferFbo->GetColorAttachment());
+    glBindTexture(GL_TEXTURE_2D, isDeferred ? deferredPassFbo->GetColorAttachment() : gBufferFbo->GetColorAttachment());
     postProcessShader->SetUniform1i("uColorTexture", 0);
 
     glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D, renderPath == RenderPath::DEFERRED ? deferredPassFbo->GetNormalsAttachment() : gBufferFbo->GetNormalsAttachment());
+    glBindTexture(GL_TEXTURE_2D, isDeferred ? deferredPassFbo->GetNormalsAttachment() : gBufferFbo->GetNormalsAttachment());
     postProcessShader->SetUniform1i("uNormalsTexture", 1);
 
     glActiveTexture(GL_TEXTURE2);
-    glBindTexture(GL_TEXTURE_2D, renderPath == RenderPath::DEFERRED ? deferredPassFbo->GetPositionAttachment() : gBufferFbo->GetPositionAttachment());
+    glBindTexture(GL_TEXTURE_2D, isDeferred ? deferredPassFbo->GetPositionAttachment() : gBufferFbo->GetPositionAttachment());
     postProcessShader->SetUniform1i("uPositionTexture", 2);
 
     glActiveTexture(GL_TEXTURE3);
-    glBindTexture(GL_TEXTURE_2D, renderPath == RenderPath::DEFERRED ? deferredPassFbo->GetDepthAttachment() : gBufferFbo->GetDepthAttachment());
+    glBindTexture(GL_TEXTURE_2D, isDeferred ? deferredPassFbo->GetDepthAttachment() : gBufferFbo->GetDepthAttachment());
     postProcessShader->SetUniform1i("uDepthTexture", 3);
 
+    glDisable(GL_DEPTH_TEST);
     glDrawElements(GL_TRIANGLES, sizeof(quadIndices) / sizeof(u16), GL_UNSIGNED_SHORT, 0);
+    glEnable(GL_DEPTH_TEST);
 
     glBindVertexArray(0);
     glUseProgram(0);
     postProcessShader->Unbind();
     
+    if (debugDrawLights)
+    {
+        DebugDrawLights();
+    }
+
     glPopDebugGroup();
+    postProcessFbo->Unbind();
+
+    #pragma endregion
 
 }
 
@@ -501,24 +471,6 @@ void Application::OnImGuiRender()
         ImGui::Begin("Renderer", &showRenderOptionsPanel);
         {
             {
-                const char* items[] = { "Albedo", "Normals", "Position", "Depth" };
-                static int currentItemIndex = 0;
-                const char* combLabel = items[currentItemIndex];
-                if (ImGui::BeginCombo("Render Target", combLabel))
-                {
-                    for (int i = 0; i < IM_ARRAYSIZE(items); i++)
-                    {
-                        const bool isSelected = (currentItemIndex == i);
-                        if (ImGui::Selectable(items[i], isSelected))
-                            currentRenderTargetId = currentItemIndex = i;
-
-                        if (isSelected) ImGui::SetItemDefaultFocus();
-                    }
-                    ImGui::EndCombo();
-                }
-            }
-
-            {
                 const char* items[] = { "Forward", "Deferred" };
                 static int currentIndex = 1;
                 const char* combLabel = items[currentIndex];
@@ -532,6 +484,24 @@ void Application::OnImGuiRender()
                             currentIndex = i;
                             renderPath = (RenderPath)i;
                         }
+
+                        if (isSelected) ImGui::SetItemDefaultFocus();
+                    }
+                    ImGui::EndCombo();
+                }
+            }
+
+            {
+                const char* items[] = { "Albedo", "Normals", "Position", "Depth" };
+                static int currentItemIndex = 0;
+                const char* combLabel = items[currentItemIndex];
+                if (ImGui::BeginCombo("Render Target", combLabel))
+                {
+                    for (int i = 0; i < IM_ARRAYSIZE(items); i++)
+                    {
+                        const bool isSelected = (currentItemIndex == i);
+                        if (ImGui::Selectable(items[i], isSelected))
+                            currentRenderTargetId = currentItemIndex = i;
 
                         if (isSelected) ImGui::SetItemDefaultFocus();
                     }
@@ -601,7 +571,7 @@ void Application::OnImGuiRender()
         //else
         {
             // Only one texture is outputted. The checking of the render target is done inside the shader
-            id = deferredPassFbo->GetColorAttachment();
+            id = postProcessFbo->GetColorAttachment();
         }
         
         ImGui::Image((ImTextureID*)id, { viewportSize.x, viewportSize.y }, { 0,1 }, { 1,0 });
@@ -710,8 +680,6 @@ void Application::OnImGuiRender()
     }
     ImGui::End();
 
-    //dirLight.OnImGuiRender();
-
 }
 
 void Application::OnWindowResized(const glm::vec2& dimensions)
@@ -720,4 +688,60 @@ void Application::OnWindowResized(const glm::vec2& dimensions)
     glViewport(0, 0, dimensions.x, dimensions.y);
     camera.SetViewportSize((uint32_t)dimensions.x, (uint32_t)dimensions.y);
     viewportSize = { dimensions.x, dimensions.y };
+}
+
+void Application::DebugDrawLights()
+{
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, gBufferFbo->GetId());
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, postProcessFbo->GetId());
+    glBlitFramebuffer(
+        0, 0, gBufferFbo->GetSize().x, gBufferFbo->GetSize().y, 0, 0, postProcessFbo->GetSize().x, postProcessFbo->GetSize().y, GL_DEPTH_BUFFER_BIT, GL_NEAREST
+    );
+
+    // Disable Cull face because at some orientations dir light's quad are culled and can't be seen
+    glDisable(GL_CULL_FACE);
+
+    glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 2, -1, "Debug Light Spheres");
+
+    glm::mat4 sphereScale = glm::scale(glm::mat4(1.0), glm::vec3(sphereLightsSize));
+
+    // Initialized after declaration because otherwise it keeps adding to the position.
+    // This way it resets every frame.
+    static float offset;
+    offset = 0;
+
+    for (auto& light : lights)
+    {
+        debugLightShader->Bind();
+        debugLightShader->SetUniformMatrix4f("viewProj", camera.GetViewProj());
+        debugLightShader->SetUniformVec3f("lightColor", light.GetDiffuse());
+        if (light.GetType() == LightType::DIRECTIONAL)
+        {
+            // Draw Quad
+            glm::vec3 dirLightPos = glm::vec3(-1 + offset, 4, 0);
+            glm::vec3 rot = light.GetPosition();
+            glm::mat4 transform = glm::translate(glm::mat4(1.0), dirLightPos)
+                * glm::eulerAngleXYZ(rot.x, rot.y, rot.z);
+
+            debugLightShader->SetUniformMatrix4f("model", transform);
+
+            planeModel->Draw(false);
+            offset += 2.0f;
+        }
+        else if (light.GetType() == LightType::POINT)
+        {
+            // Draw Sphere
+            glm::mat4 transform = glm::translate(glm::mat4(1.0), light.GetPosition()) * sphereScale;
+            debugLightShader->SetUniformMatrix4f("model", transform);
+
+            sphereModel->Draw(false);
+        }
+        debugLightShader->Unbind();
+    }
+
+    //glEnable(GL_DEPTH_TEST);
+    //glDepthMask(GL_TRUE);
+    glEnable(GL_CULL_FACE);
+
+    glPopDebugGroup();
 }

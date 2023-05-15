@@ -99,6 +99,7 @@ private:
     Application(const Application&);
     Application& operator=(Application&) {}
 
+    void DebugDrawLights();
 
 public:
     bool isRunning;
@@ -158,6 +159,8 @@ private:
     // Models
     std::shared_ptr<Framebuffer> gBufferFbo;
     std::shared_ptr<Framebuffer> deferredPassFbo;
+    std::shared_ptr<Framebuffer> postProcessFbo;
+
     glm::vec2 viewportSize = glm::vec2(0);
 
     std::shared_ptr<Model> sphereModel;

@@ -49,7 +49,7 @@ void main()
 		case 0:
 		{
 			vec3 colorTexture = texture(uColorTexture, vTexCoords).rgb;
-			fragColor = vec4(colorTexture * vec3(0.8, 0.2, 0.2), 1);
+			fragColor = vec4(colorTexture, 1);
 			break;
 		}
 
@@ -70,7 +70,7 @@ void main()
 		// Depth
 		case 3:
 		{
-			fragColor = texture(uDepthTexture, vTexCoords);
+			fragColor = vec4(vec3(texture2D(uDepthTexture, vTexCoords).r), 1);
 			break;
 		}
 	}

@@ -91,6 +91,12 @@ vec3 CalcPointLight(Light light, vec3 normal, vec3 fragPos, vec3 viewDir)
 	return diffuse;
 }
 
+float LinearizeDepth(float depth) 
+{
+    float z = depth * 2.0 - 1.0; // back to NDC 
+    return (2.0 * uNear * uFar) / (uFar + uNear - z * (uFar - uNear));	
+}
+
 void main()
 {
 	switch (renderTarget)
@@ -98,10 +104,6 @@ void main()
 		// Color
 		case 0:
 		{
-			// If background, discard
-			//if (texture2D(uDepthTexture, vTexCoords).x == 1.0)
-			//	discard;
-
 			// Retrieve data from textures
 			vec3 position = texture2D(uPositionTexture, vTexCoords).xyz;
 			vec3 viewDir = normalize(uCamPos - position);
@@ -149,7 +151,8 @@ void main()
 		// Depth
 		case 3:
 		{
-			fragColor = vec4(vec3(texture2D(uDepthTexture, vTexCoords).r), 1.0);
+			float depth = LinearizeDepth(texture2D(uDepthTexture, vTexCoords).r) / uFar;
+			fragColor = vec4(vec3(depth), 1.0);
 			break;
 		}
 	}
