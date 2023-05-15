@@ -61,30 +61,6 @@ GLuint CreateTexture2DFromImage(Image image)
     return texHandle;
 }
 
-//void SetShaderUniforms(Application* app, int shaderIndex)
-//{
-//    Program& shader = app->programs[shaderIndex];
-//    int attribCount = -1;
-//    glGetProgramiv(shader.handle, GL_ACTIVE_ATTRIBUTES, &attribCount);
-//    for (int i = 0; i < attribCount; ++i)
-//    {
-//        GLchar attribName[64] = {};
-//        int attribNameLength;
-//        GLint attribSize;
-//        GLenum type = -1;
-//        glGetActiveAttrib(shader.handle, i, ARRAY_COUNT(attribName), &attribNameLength, &attribSize, &type, attribName);
-//
-//        u8 attribLoc = glGetAttribLocation(shader.handle, attribName);
-//        
-//        // How to get component count??????
-//        shader.vertexInputLayout.attributes.push_back({ attribLoc, (u8)attribSize });
-//
-//        int a = 0;
-//        a += 9;
-//    }
-//}
-
-
 Application* Application::instance = nullptr;
 
 Application::Application()
@@ -162,9 +138,7 @@ void Application::Init()
     deferredPassShader = std::make_shared<Shader>("Assets/Shaders/deferred_pass.glsl", "DEFERRED");
     postProcessShader = std::make_shared<Shader>("Assets/Shaders/post_process.glsl", "POST_PROCESS");
     debugLightShader = std::make_shared<Shader>("Assets/Shaders/sphere_light.glsl", "SPHERE_LIGHT");
-
-    //SetShaderUniforms(this, texturedGeometryShaderIdx);
-    
+   
     //patrickModel = ModelImporter::ImportModel("Assets/Models/Cerberus/Cerberus.fbx");
     //patrickModel->GetFirstMaterial()->SetNormalMap(std::make_shared<Texture2D>("Assets/Models/Cerberus/Textures/N.tga.png"));
     patrickModel = ModelImporter::ImportModel("Assets/Models/Patrick/Patrick.obj");
@@ -228,6 +202,7 @@ void Application::Update()
 {
     camera.Update(deltaTime);
 
+
     globalParamsUbo->Map();
     {
         globalParamsUbo->AlignHead(uniformBlockAlignment);
@@ -278,7 +253,7 @@ void Application::Render()
     glClearColor(0.0, 0.0, 0.0, 1.0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    GLuint buffs[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2/*, GL_COLOR_ATTACHMENT3*/ };
+    GLuint buffs[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2 };
     glDrawBuffers(3, buffs);
     
     switch (mode)
@@ -300,8 +275,8 @@ void Application::Render()
         case Mode_Model:
         {
             glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 1, -1, "Geometry pass");
+            
             globalParamsUbo->BindRange(0, globalParamsOffset, globalParamsSize);
-
             for (auto& entity : entities)
             {
                 localParamsUbo->BindRange(1, entity.localParamsOffset, entity.localParamsSize);
@@ -382,21 +357,26 @@ void Application::Render()
 
     bool isDeferred = renderPath == RenderPath::DEFERRED;
 
+    // Since the deferred pass only outputs a color texture, we only need to check wether to use one or another.
+    // For the rest it's safe to get them from the G-buffer
+
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, isDeferred ? deferredPassFbo->GetColorAttachment() : gBufferFbo->GetColorAttachment());
     postProcessShader->SetUniform1i("uColorTexture", 0);
 
     glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D, isDeferred ? deferredPassFbo->GetNormalsAttachment() : gBufferFbo->GetNormalsAttachment());
+    glBindTexture(GL_TEXTURE_2D, gBufferFbo->GetNormalsAttachment());
     postProcessShader->SetUniform1i("uNormalsTexture", 1);
 
     glActiveTexture(GL_TEXTURE2);
-    glBindTexture(GL_TEXTURE_2D, isDeferred ? deferredPassFbo->GetPositionAttachment() : gBufferFbo->GetPositionAttachment());
+    glBindTexture(GL_TEXTURE_2D, gBufferFbo->GetPositionAttachment());
     postProcessShader->SetUniform1i("uPositionTexture", 2);
 
     glActiveTexture(GL_TEXTURE3);
-    glBindTexture(GL_TEXTURE_2D, isDeferred ? deferredPassFbo->GetDepthAttachment() : gBufferFbo->GetDepthAttachment());
+    glBindTexture(GL_TEXTURE_2D, gBufferFbo->GetDepthAttachment());
     postProcessShader->SetUniform1i("uDepthTexture", 3);
+
+    globalParamsUbo->BindRange(0, globalParamsOffset, globalParamsSize);
 
     glDisable(GL_DEPTH_TEST);
     glDrawElements(GL_TRIANGLES, sizeof(quadIndices) / sizeof(u16), GL_UNSIGNED_SHORT, 0);
@@ -580,6 +560,7 @@ void Application::OnImGuiRender()
 
     ImGui::Begin("Info");
     ImGui::Text("FPS: %f", 1.0f / deltaTime);
+    ImGui::Text("Lights Count: %i", lights.size());
     ImGui::End();
 
     ImGui::Begin("Camera");
@@ -700,6 +681,7 @@ void Application::DebugDrawLights()
 
     // Disable Cull face because at some orientations dir light's quad are culled and can't be seen
     glDisable(GL_CULL_FACE);
+    glDepthMask(GL_FALSE);
 
     glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 2, -1, "Debug Light Spheres");
 
@@ -742,6 +724,7 @@ void Application::DebugDrawLights()
     //glEnable(GL_DEPTH_TEST);
     //glDepthMask(GL_TRUE);
     glEnable(GL_CULL_FACE);
+    glDepthMask(GL_TRUE);
 
     glPopDebugGroup();
 }

@@ -26,6 +26,25 @@ void main()
 
 #elif defined(FRAGMENT) ///////////////////////////////////////////////
 
+struct Light
+{
+	int type;
+	vec3 diffuse;
+	vec3 position; // Or direction for dir lights
+	float intensity;
+};
+
+layout(binding = 0, std140) uniform GlobalParams
+{
+	int renderMode;
+	float uNear;
+	float uFar;
+	vec3 uCamPos;
+	unsigned int uLightCount;
+	Light uLights[32];
+};
+
+
 layout(location = 0) uniform sampler2D uColorTexture;
 layout(location = 1) uniform sampler2D uNormalsTexture;
 layout(location = 2) uniform sampler2D uPositionTexture;
@@ -41,9 +60,15 @@ layout(location = 0) out vec4 fragColor;
 //layout(location = 2) out vec4 positionColor;
 //layout(location = 3) out vec4 depthColor;
 
+float LinearizeDepth(float depth) 
+{
+    float z = depth * 2.0 - 1.0; // back to NDC 
+    return (2.0 * uNear * uFar) / (uFar + uNear - z * (uFar - uNear));	
+}
+
 void main()
 {
-	switch(renderTarget)
+	switch (renderTarget)
 	{
 		// Color
 		case 0:
@@ -70,17 +95,11 @@ void main()
 		// Depth
 		case 3:
 		{
-			fragColor = vec4(vec3(texture2D(uDepthTexture, vTexCoords).r), 1);
+			float depth = LinearizeDepth(texture2D(uDepthTexture, vTexCoords).r) / uFar;
+			fragColor = vec4(vec3(depth), 1);
 			break;
 		}
 	}
-
-	/*vec3 colorTexture = texture(uColorTexture, vTexCoords).rgb;
-	fragColor = vec4(colorTexture * vec3(0.8, 0.2, 0.2), 1);
-
-	depthColor = texture(uDepthTexture, vTexCoords);
-	normalsColor = texture(uNormalsTexture, vTexCoords);
-	positionColor = texture(uPositionTexture, vTexCoords);*/
 }
 
 #endif
