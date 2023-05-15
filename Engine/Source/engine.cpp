@@ -124,6 +124,8 @@ void Application::Init()
     
     #pragma endregion
 
+    #pragma region Framebuffers
+
     FramebufferAttachments att{ true, true, true, true };
     gBufferFbo = std::make_shared<Framebuffer>(att, viewportSize.x, viewportSize.y);
 
@@ -134,17 +136,21 @@ void Application::Init()
 
     currentRenderTargetId = 0;
 
+    #pragma endregion
+
+    #pragma region Shaders and Models Loading
+
     texturedGeometryShader = std::make_shared<Shader>("Assets/Shaders/shaders.glsl", "TEXTURED_GEOMETRY");
     deferredPassShader = std::make_shared<Shader>("Assets/Shaders/deferred_pass.glsl", "DEFERRED");
     postProcessShader = std::make_shared<Shader>("Assets/Shaders/post_process.glsl", "POST_PROCESS");
     debugLightShader = std::make_shared<Shader>("Assets/Shaders/sphere_light.glsl", "SPHERE_LIGHT");
    
-    //patrickModel = ModelImporter::ImportModel("Assets/Models/Cerberus/Cerberus.fbx");
-    //patrickModel->GetFirstMaterial()->SetNormalMap(std::make_shared<Texture2D>("Assets/Models/Cerberus/Textures/N.tga.png"));
     patrickModel = ModelImporter::ImportModel("Assets/Models/Patrick/Patrick.obj");
     sphereModel = ModelImporter::ImportModel("Assets/Models/Sphere.fbx");
     planeModel = ModelImporter::ImportModel("Assets/Models/Plane.fbx");
-    
+    #pragma endregion
+
+    #pragma region Entities
 
     Entity m1 = Entity("Right Patrick", patrickModel);
     m1.SetPosition({ 6,0,0 });
@@ -157,7 +163,8 @@ void Application::Init()
     Entity m3 = Entity("Left Patrick", patrickModel);
     m3.SetPosition({ -6,0,0 });
     entities.emplace_back(m3);
-    
+
+    #pragma endregion    
 
     glGetIntegerv(GL_MAX_UNIFORM_BLOCK_SIZE, &maxUniformBufferSize);
     glGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT, &uniformBlockAlignment);
@@ -188,6 +195,7 @@ void Application::Init()
 #pragma endregion
 
     diceTex = std::make_shared<Texture2D>("Assets/Textures/dice.png");
+
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
@@ -202,6 +210,7 @@ void Application::Update()
 {
     camera.Update(deltaTime);
 
+    #pragma region Global Parameters Uniform Buffer
 
     globalParamsUbo->Map();
     {
@@ -226,7 +235,9 @@ void Application::Update()
     }
     globalParamsUbo->Unmap();
 
+    #pragma endregion
 
+    #pragma region Local Parameters Uniform Buffer
 
     localParamsUbo->Map();
     {
@@ -243,6 +254,7 @@ void Application::Update()
     }
     localParamsUbo->Unmap();
 
+    #pragma endregion
 }
 
 void Application::Render()
@@ -341,6 +353,8 @@ void Application::Render()
 
     #pragma endregion
 
+    // The pass that collects all the textures and checks for the current render target to output it
+    // Eventually, post processing computations will only be done if the current render target is the albedo attachment
     #pragma region Post Processing Pass
 
     postProcessFbo->Bind();
@@ -400,6 +414,8 @@ void Application::Render()
 
 void Application::OnImGuiRender()
 {
+    #pragma region Main Menu Bar
+
     ImGui::BeginMainMenuBar();
     {
         if (ImGui::BeginMenu("View"))
@@ -525,6 +541,7 @@ void Application::OnImGuiRender()
         ImGui::End();
     }
 
+    #pragma endregion
 
     ImGui::Begin("Viewport");
     {
@@ -537,23 +554,8 @@ void Application::OnImGuiRender()
             viewportSize = { dimensions.x, dimensions.y };
         }
         
-        int id = -1;
-        //if (renderPath == RenderPath::FORWARD)
-        //{
-        //    switch(currentRenderTargetId)
-        //    {
-        //        case 0: id = gBufferFbo->GetColorAttachment(); break;
-        //        case 1: id = gBufferFbo->GetNormalsAttachment();  break;
-        //        case 2: id = gBufferFbo->GetPositionAttachment(); break;
-        //        case 3: id = gBufferFbo->GetDepthAttachment();  break;
-        //    }
-        //}
-        //else
-        {
-            // Only one texture is outputted. The checking of the render target is done inside the shader
-            id = postProcessFbo->GetColorAttachment();
-        }
-        
+        // Only one texture is outputted. The checking of the render target is done inside the shader
+        int id = postProcessFbo->GetColorAttachment();
         ImGui::Image((ImTextureID*)id, { viewportSize.x, viewportSize.y }, { 0,1 }, { 1,0 });
     }
     ImGui::End();
@@ -627,7 +629,8 @@ void Application::OnImGuiRender()
                 {
                     if (ImGui::Button(mat->GetName().c_str()))
                     {
-
+                        for (auto& mesh : currentEntity->GetModel()->GetMeshes())
+                            mesh->SetMaterial(mat);
                     }
                 }
                 ImGui::TreePop();

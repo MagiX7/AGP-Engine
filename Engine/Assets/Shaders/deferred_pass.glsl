@@ -99,64 +99,33 @@ float LinearizeDepth(float depth)
 }
 
 void main()
-{
-	switch (renderTarget)
+{	
+	// Retrieve data from textures
+	vec3 position = texture2D(uPositionTexture, vTexCoords).xyz;
+	vec3 viewDir = normalize(uCamPos - position);
+	
+	vec3 normals = texture2D(uNormalsTexture, vTexCoords).rgb;
+	vec3 colorTexture = texture2D(uColorTexture, vTexCoords).rgb;
+	float specular = texture2D(uColorTexture, vTexCoords).a;
+
+	vec3 lightColor = vec3(0);
+
+	// Calculate lighting
+	for (int i = 0; i < uLightCount; ++i)
 	{
-		// Color
-		case 0:
+		// Directional
+		if(uLights[i].type == 0)
 		{
-			// Retrieve data from textures
-			vec3 position = texture2D(uPositionTexture, vTexCoords).xyz;
-			vec3 viewDir = normalize(uCamPos - position);
-			
-			vec3 normals = texture2D(uNormalsTexture, vTexCoords).rgb;
-			vec3 colorTexture = texture2D(uColorTexture, vTexCoords).rgb;
-			float specular = texture2D(uColorTexture, vTexCoords).a;
-
-			vec3 lightColor = vec3(0);
-
-			// Calculate lighting
-			for (int i = 0; i < uLightCount; ++i)
-			{
-				// Directional
-				if(uLights[i].type == 0)
-				{
-					lightColor += CalcDirLight(uLights[i], normals, viewDir);
-				}
-				// Point
-				else if(uLights[i].type == 1)
-				{
-					lightColor += CalcPointLight(uLights[i], normals, position, viewDir);
-				}
-			}
-
-			fragColor = vec4(colorTexture * lightColor, 1);
-
-			break;
+			lightColor += CalcDirLight(uLights[i], normals, viewDir);
 		}
-
-		// Normals
-		case 1:
+		// Point
+		else if(uLights[i].type == 1)
 		{
-			fragColor = texture2D(uNormalsTexture, vTexCoords);
-			break;
-		}
-
-		// Positions
-		case 2:
-		{
-			fragColor = texture2D(uPositionTexture, vTexCoords);
-			break;
-		}
-
-		// Depth
-		case 3:
-		{
-			float depth = LinearizeDepth(texture2D(uDepthTexture, vTexCoords).r) / uFar;
-			fragColor = vec4(vec3(depth), 1.0);
-			break;
+			lightColor += CalcPointLight(uLights[i], normals, position, viewDir);
 		}
 	}
+
+	fragColor = vec4(colorTexture * lightColor, 1);
 }
 
 #endif
