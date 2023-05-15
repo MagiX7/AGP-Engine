@@ -423,19 +423,19 @@ void Application::Render()
     glBindVertexArray(screenSpaceVao);
 
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, deferredPassFbo->GetColorAttachment());
+    glBindTexture(GL_TEXTURE_2D, renderPath == RenderPath::DEFERRED ? deferredPassFbo->GetColorAttachment() : gBufferFbo->GetColorAttachment());
     postProcessShader->SetUniform1i("uColorTexture", 0);
 
     glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D, deferredPassFbo->GetNormalsAttachment());
+    glBindTexture(GL_TEXTURE_2D, renderPath == RenderPath::DEFERRED ? deferredPassFbo->GetNormalsAttachment() : gBufferFbo->GetNormalsAttachment());
     postProcessShader->SetUniform1i("uNormalsTexture", 1);
 
     glActiveTexture(GL_TEXTURE2);
-    glBindTexture(GL_TEXTURE_2D, deferredPassFbo->GetPositionAttachment());
+    glBindTexture(GL_TEXTURE_2D, renderPath == RenderPath::DEFERRED ? deferredPassFbo->GetPositionAttachment() : gBufferFbo->GetPositionAttachment());
     postProcessShader->SetUniform1i("uPositionTexture", 2);
 
     glActiveTexture(GL_TEXTURE3);
-    glBindTexture(GL_TEXTURE_2D, deferredPassFbo->GetDepthAttachment());
+    glBindTexture(GL_TEXTURE_2D, renderPath == RenderPath::DEFERRED ? deferredPassFbo->GetDepthAttachment() : gBufferFbo->GetDepthAttachment());
     postProcessShader->SetUniform1i("uDepthTexture", 3);
 
     glDrawElements(GL_TRIANGLES, sizeof(quadIndices) / sizeof(u16), GL_UNSIGNED_SHORT, 0);
@@ -588,17 +588,17 @@ void Application::OnImGuiRender()
         }
         
         int id = -1;
-        if (renderPath == RenderPath::FORWARD)
-        {
-            switch(currentRenderTargetId)
-            {
-                case 0: id = gBufferFbo->GetColorAttachment(); break;
-                case 1: id = gBufferFbo->GetNormalsAttachment();  break;
-                case 2: id = gBufferFbo->GetPositionAttachment(); break;
-                case 3: id = gBufferFbo->GetDepthAttachment();  break;
-            }
-        }
-        else
+        //if (renderPath == RenderPath::FORWARD)
+        //{
+        //    switch(currentRenderTargetId)
+        //    {
+        //        case 0: id = gBufferFbo->GetColorAttachment(); break;
+        //        case 1: id = gBufferFbo->GetNormalsAttachment();  break;
+        //        case 2: id = gBufferFbo->GetPositionAttachment(); break;
+        //        case 3: id = gBufferFbo->GetDepthAttachment();  break;
+        //    }
+        //}
+        //else
         {
             // Only one texture is outputted. The checking of the render target is done inside the shader
             id = deferredPassFbo->GetColorAttachment();
