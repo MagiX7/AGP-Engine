@@ -4,7 +4,7 @@
 This project is a Graphics Engine made in OpenGL and C++ from scratch. It explores different graphics techniques such as Deferred Rendering, and PBR and SSAO in a near future.
 
 ## Controls
- While holding the right mouse button, the camera can be moved with WASDEQ.
+The camera can be moved with WASDEQ and rotated moving the mouse. All of this while holding the right mouse button.
  
  ## UI
  The UI consists in:
