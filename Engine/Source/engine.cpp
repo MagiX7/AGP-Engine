@@ -452,6 +452,17 @@ void Application::OnImGuiRender()
                 {
                     lights.emplace_back(LightType::POINT, glm::vec3(0), glm::vec3(1));
                 }
+                if (ImGui::MenuItem("10 Point"))
+                {
+                    std::srand(std::time(nullptr));
+                    for (int i = 0; i < 10; ++i)
+                    {
+                        int r = std::rand();
+                        int g = std::rand();
+                        int b = std::rand();
+                        lights.emplace_back(LightType::POINT, glm::vec3(i * 2.0f - 10.0f, 0, 2.0f), glm::normalize(glm::vec3(r, g, b)));
+                    }
+                }
 
                 ImGui::EndMenu();
             }
