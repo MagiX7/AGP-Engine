@@ -623,9 +623,9 @@ void Application::OnImGuiRender()
             if (ImGui::DragFloat3("Position", glm::value_ptr(pos), 0.01f))
                 currentEntity->SetPosition(pos);
 
-            auto& rot = currentEntity->GetRotation();
-            if (ImGui::DragFloat3("Rotation", glm::value_ptr(rot), 0.01f))
-                currentEntity->SetRotation(rot);
+            auto rot = glm::degrees(currentEntity->GetRotation());
+            if (ImGui::DragFloat3("Rotation", glm::value_ptr(rot), 0.1f))
+                currentEntity->SetRotation(glm::radians(rot));
 
             auto& scale = currentEntity->GetScale();
             if (ImGui::DragFloat3("Scale", glm::value_ptr(scale), 0.01f))
@@ -649,7 +649,6 @@ void Application::OnImGuiRender()
         }
     }
     ImGui::End();
-
 
     ImGui::Begin("Lighting");
     {
