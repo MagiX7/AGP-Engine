@@ -12,6 +12,7 @@ public:
 	void Unbind();
 
 	unsigned int GetId() { return id; }
+	const std::string& GetName() { return name; }
 
 private:
 	unsigned int id;
@@ -20,6 +21,7 @@ private:
 	int dataFormat;
 
 	std::string path;
+	std::string name;
 	int width;
 	int height;
 

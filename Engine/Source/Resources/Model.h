@@ -59,9 +59,12 @@ public:
 	void Draw(bool bindMaterial);
 
 	void SetMaterial(std::shared_ptr<Material> mat) { material = mat; }
-		
+	[[nodiscard]] const std::shared_ptr<Material>& GetMaterial() { return material; }
+
 	inline const std::shared_ptr<VertexBuffer>& GetVertexBuffer() { return vbo; }
 	inline const std::shared_ptr<IndexBuffer>& GetIndexBuffer() { return ibo; }
+
+	inline const std::string& GetName() { return name; }
 
 private:
 	std::string name;

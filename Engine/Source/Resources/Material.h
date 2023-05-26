@@ -32,6 +32,12 @@ public:
 	inline void SetAlbedoMap(const std::shared_ptr<Texture2D> albedoTexture) { albedoMap = albedoTexture; }
 	inline const std::shared_ptr<Texture2D>& GetAlbedoMap() { return albedoMap; }
 
+	inline void SetMetallicMap(const std::shared_ptr<Texture2D> metallicTexture) { metallicMap = metallicTexture; }
+	inline const std::shared_ptr<Texture2D>& GetMetallicMap() { return metallicMap; }
+
+	/*inline void SetAlbedoMap(const std::shared_ptr<Texture2D> albedoTexture) { albedoMap = albedoTexture; }
+	inline const std::shared_ptr<Texture2D>& GetAlbedoMap() { return albedoMap; }*/
+
 	inline void SetEmissiveMap(const std::shared_ptr<Texture2D> emissiveTexture) { emissiveMap = emissiveTexture; }
 	inline const std::shared_ptr<Texture2D>& GetEmissiveMap() { return emissiveMap; }
 
@@ -55,6 +61,8 @@ private:
 	float smoothness;
 
 	std::shared_ptr<Texture2D> albedoMap;
+	std::shared_ptr<Texture2D> metallicMap;
+	//std::shared_ptr<Texture2D> roughnessMap;
 	std::shared_ptr<Texture2D> emissiveMap;
 	std::shared_ptr<Texture2D> specularMap;
 	std::shared_ptr<Texture2D> normalMap;

@@ -100,6 +100,7 @@ private:
     Application& operator=(Application&) {}
 
     void DebugDrawLights();
+    bool ShowTexturesPanel(std::shared_ptr<Material> material, int texIndex);
 
 public:
     bool isRunning;
@@ -111,6 +112,7 @@ private:
 
     bool showRenderOptionsPanel = true;
     bool showExtensionsPanel = true;
+    bool showTexturesPanel = false;
     unsigned int currentRenderTargetId;
 
     // Loop

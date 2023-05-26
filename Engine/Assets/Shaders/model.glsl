@@ -21,6 +21,8 @@ out vec3 vPosition;
 out vec3 vWorldPosition;
 out vec2 vTexCoords;
 out vec3 vNormals;
+out mat3 TBN;
+out mat4 vModel;
 
 //uniform mat4 model;
 //uniform mat4 viewProj;
@@ -32,11 +34,17 @@ void main()
 
 	gl_Position = mvp * vec4(pos, 1);
 	vTexCoords = aTexCoord;
-	vNormals = (model * vec4(aNormals, 0)).xyz;
+	//vNormals = (model * vec4(normalize(aNormals), 0)).xyz;
+	vNormals = aNormals;
 	vPosition = aPosition;
 	vWorldPosition = (model * vec4(aPosition, 1)).xyz;
+	vModel = model;
 
-
+	vec3 N = normalize(aNormals);
+	vec3 T = aTangents;
+	T = normalize(T - dot(T, N) * N);
+	vec3 B = cross(T, N);
+	TBN = mat3(T, B, N);
 
 }
 
@@ -63,12 +71,18 @@ layout(binding = 0, std140) uniform GlobalParams
 
 layout(location = 0) uniform sampler2D uAlbedoMap;
 layout(location = 1) uniform sampler2D uNormalMap;
+layout(location = 2) uniform sampler2D uMetallicMap;
+layout(location = 3) uniform sampler2D uRoughnessMap;
 uniform int hasNormalMap;
+uniform int hasMetallicMap;
+uniform int hasRoughnessMap;
 
 in vec3 vPosition;
 in vec3 vWorldPosition;
 in vec2 vTexCoords;
 in vec3 vNormals;
+in mat3 TBN;
+in mat4 vModel;
 
 layout(location = 0) out vec4 fragColor;
 layout(location = 1) out vec4 normalsColor;
@@ -77,6 +91,53 @@ layout(location = 3) out vec4 depthColor;
 layout(location = 4) out vec4 specularColor;
 
 
+const float PI = 3.14159265359;
+
+// --------------------------------------------------------------------
+
+vec3 FresnelSchlickRoughness(float cosTheta, vec3 F0, float roughness)
+{
+	return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
+}
+
+vec3 FresnelSchlick(float cosTheta, vec3 F0)
+{
+	return  F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
+}
+
+float DistributionGGX(vec3 N, vec3 H, float roughness)
+{
+	float a2 = roughness * roughness;
+	float NdotH = max(dot(N, H), 0.0);
+	float NdotH2 = NdotH * NdotH;
+
+	float denom = (NdotH2 * (a2 - 1.0) + 1.0);
+	denom = PI * denom * denom;
+
+	return (a2) / denom;
+}
+
+float GeometrySchlickGGX(float NdotV, float roughness)
+{
+	float r = (roughness + 1.0);
+	float k = (r * r) / 8.0;
+
+	float denom = NdotV * (1.0 - k) + k;
+
+	return NdotV / denom;
+}
+
+float GeometrySmith(float NdotV, float NdotL, float roughness)
+{
+	float ggx2 = GeometrySchlickGGX(NdotV, roughness);
+	float ggx1 = GeometrySchlickGGX(NdotL, roughness);
+
+	return ggx1 * ggx2;
+}
+
+
+// --------------------------------------------------------------------
+
 float LinearizeDepth(float depth) 
 {
     float z = depth * 2.0 - 1.0; // back to NDC 
@@ -84,20 +145,36 @@ float LinearizeDepth(float depth)
 }
 
 
-vec3 CalcDirLight(Light light, vec3 normal, vec3 viewDir)
+vec3 CalcDirLight(in Light light, in vec3 normal, in vec3 viewDir, in vec3 albedo, in float metallic, in float roughness, out vec3 F0)
 {
 	vec3 lightDir = normalize(light.position);
+	vec3 halfway = normalize(viewDir + lightDir);
 
-	// Diffuse shading
-	float diff = max(dot(normal, lightDir), 0.0);
+	float NdotL = max(dot(normal, lightDir), 0.0);
+	float NdotV = max(dot(normal, viewDir), 0.0);
+	float NdotH = max(dot(normal, halfway), 0.0);
 
-	// Specular shading
-	//vec3 reflectDir = reflect(-lightDir, normal);
-	//float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);
-	//spec = step(0.5f, spec);
 	
-	vec3 diffuse = diff * light.diffuse * light.intensity;
-	return diffuse;
+	F0 = vec3(0.04);
+	F0 = mix(F0, albedo, metallic);
+
+	float NDF = DistributionGGX(normal, halfway, roughness);
+	float G = GeometrySmith(NdotV, NdotL, roughness);
+	vec3 F = FresnelSchlick(max(dot(halfway, viewDir), 0.0), F0);
+
+	vec3 numerator = NDF * F * G;
+	float denominator = max((4 * NdotV * NdotL), 0.0001);
+	vec3 specular = numerator / denominator;
+
+	// Lambert Diffuse ========
+	vec3 ks = F;
+	vec3 kd = vec3(1.0) - ks;
+	kd *= 1.0f - metallic;
+	// Lambert Diffuse ========
+
+	vec3 radiance = light.diffuse * light.intensity;
+
+	return (kd * (albedo / PI) + specular) * radiance * NdotL;
 }
 
 vec3 CalcPointLight(Light light, vec3 normal, vec3 fragPos, vec3 viewDir)
@@ -129,25 +206,33 @@ void main()
 {
 	vec4 col = vec4(0);
 	
-	vec3 normal = normalize((texture2D(uNormalMap, vTexCoords).rgb * 2.0 - 1.0) * hasNormalMap
+
+	vec3 normal = normalize(TBN * (texture2D(uNormalMap, vTexCoords).rgb) * hasNormalMap
 					+ vNormals * 1.0 - hasNormalMap);
+
+	normal = normalize((vModel * vec4(normal, 0.0)).xyz);
+
+	vec3 albedo = texture2D(uMetallicMap, vTexCoords).rgb;
+	float metallic = texture2D(uMetallicMap, vTexCoords).r;
+	float roughness = texture2D(uRoughnessMap, vTexCoords).r;
 
 	// Forward
 	if (renderMode == 0)
 	{
-		vec4 tex = texture2D(uAlbedoMap, vTexCoords);
+		//vec4 tex = texture2D(uAlbedoMap, vTexCoords);
 		//col = vec4(lightCol, 1) * tex;
 
 		vec3 lightColor = vec3(0);
 		vec3 viewDir = normalize(uCamPos - vPosition);
 
+		vec3 F0 = vec3(0);
 
 		for (int i = 0; i < uLightCount; ++i)
 		{
 			// Directional
 			if (uLights[i].type == 0)
 			{
-				lightColor += CalcDirLight(uLights[i], normal, viewDir);
+				lightColor += CalcDirLight(uLights[i], normal, viewDir, albedo, metallic, roughness, F0);
 			}
 			// Point
 			else if (uLights[i].type == 1)
@@ -156,7 +241,7 @@ void main()
 			}
 		}
 
-		col = tex * vec4(lightColor, 1);
+		col = vec4(lightColor, 1);
 
 	}
 	// Deferred
