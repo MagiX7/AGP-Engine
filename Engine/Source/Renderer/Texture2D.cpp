@@ -29,7 +29,7 @@ Texture2D::Texture2D(const std::string& filePath) : path(filePath)
         a += 9;
     }
 
-    internalFormat = dataFormat = 0;
+    internalFormat = dataFormat = -1;
     if (channels == 4)
     {
         internalFormat = GL_RGBA8;

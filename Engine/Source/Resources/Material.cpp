@@ -16,9 +16,10 @@ Material::~Material()
 void Material::Bind()
 {
 	shader->Bind();
-	shader->SetUniformVec3f("albedoColor", albedoColor);
-	shader->SetUniform1f("smoothness", smoothness);
+	shader->SetUniformVec3f("uAlbedoColor", albedoColor);
+	//shader->SetUniform1f("smoothness", smoothness);
 
+	shader->SetUniform1i("hasAlbedoMap", albedoMap ? 1 : 0);
 	if (albedoMap)
 	{
 		albedoMap->Bind(0);
@@ -50,4 +51,5 @@ void Material::Bind()
 
 void Material::Unbind()
 {
+	shader->Unbind();
 }

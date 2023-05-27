@@ -69,10 +69,12 @@ layout(binding = 0, std140) uniform GlobalParams
 };
 
 
+uniform vec3 uAlbedoColor;
 layout(location = 0) uniform sampler2D uAlbedoMap;
 layout(location = 1) uniform sampler2D uNormalMap;
 layout(location = 2) uniform sampler2D uMetallicMap;
 layout(location = 3) uniform sampler2D uRoughnessMap;
+uniform int hasAlbedoMap;
 uniform int hasNormalMap;
 uniform int hasMetallicMap;
 uniform int hasRoughnessMap;
@@ -113,18 +115,18 @@ float DistributionGGX(vec3 N, vec3 H, float roughness)
 
 	float denom = (NdotH2 * (a2 - 1.0) + 1.0);
 	denom = PI * denom * denom;
+	denom = max(denom, 0.00001);
 
-	return (a2) / denom;
+	return a2 / denom;
 }
 
-float GeometrySchlickGGX(float NdotV, float roughness)
+float GeometrySchlickGGX(float X, float roughness)
 {
-	float r = (roughness + 1.0);
-	float k = (r * r) / 8.0;
+	float k = roughness / 2.0;
+	float denom = X * (1.0 - k) + k;
+	denom = max(denom, 0.00001);
 
-	float denom = NdotV * (1.0 - k) + k;
-
-	return NdotV / denom;
+	return X / denom;
 }
 
 float GeometrySmith(float NdotV, float NdotL, float roughness)
@@ -144,7 +146,6 @@ float LinearizeDepth(float depth)
     return (2.0 * uNear * uFar) / (uFar + uNear - z * (uFar - uNear));	
 }
 
-
 vec3 CalcDirLight(in Light light, in vec3 normal, in vec3 viewDir, in vec3 albedo, in float metallic, in float roughness, out vec3 F0)
 {
 	vec3 lightDir = normalize(light.position);
@@ -163,56 +164,68 @@ vec3 CalcDirLight(in Light light, in vec3 normal, in vec3 viewDir, in vec3 albed
 	vec3 F = FresnelSchlick(max(dot(halfway, viewDir), 0.0), F0);
 
 	vec3 numerator = NDF * F * G;
-	float denominator = max((4 * NdotV * NdotL), 0.0001);
+	float denominator = 4 * max((NdotV * NdotL), 0.0001);
 	vec3 specular = numerator / denominator;
 
-	// Lambert Diffuse ========
+
 	vec3 ks = F;
 	vec3 kd = vec3(1.0) - ks;
-	kd *= 1.0f - metallic;
-	// Lambert Diffuse ========
+	kd *= (1.0f - metallic);
+
 
 	vec3 radiance = light.diffuse * light.intensity;
 
 	return (kd * (albedo / PI) + specular) * radiance * NdotL;
 }
 
-vec3 CalcPointLight(Light light, vec3 normal, vec3 fragPos, vec3 viewDir)
+vec3 CalcPointLight(Light light, vec3 normal, vec3 fragPos, vec3 viewDir, in vec3 albedo, in float metallic, in float roughness, out vec3 F0)
 {
 	vec3 lightDir = normalize(light.position - fragPos);
 
-	// Diffuse shading
-	float diff = max(dot(normal, lightDir), 0.0);
+	vec3 halfway = normalize(viewDir + lightDir);
 
-	// Specular shading
-	//vec3 reflectDir = reflect(-lightDir, normal);
-	//float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);
-	//spec = step(0.5f, spec);
+	float NdotL = max(dot(normal, lightDir), 0.0);
+	float NdotV = max(dot(normal, viewDir), 0.0);
+	float NdotH = max(dot(normal, halfway), 0.0);
 
-	// Attenuation
+	
+	F0 = vec3(0.04);
+	F0 = mix(F0, albedo, metallic);
+
+	float NDF = DistributionGGX(normal, halfway, roughness);
+	float G = GeometrySmith(NdotV, NdotL, roughness);
+	vec3 F = FresnelSchlick(max(dot(halfway, viewDir), 0.0), F0);
+
+	vec3 numerator = NDF * F * G;
+	float denominator = 4 * max((NdotV * NdotL), 0.0001);
+	vec3 specular = numerator / denominator;
+
+
+	vec3 ks = F;
+	vec3 kd = vec3(1.0) - ks;
+	kd *= (1.0f - metallic);
+
 	float distance = length(fragPos - light.position);
     float attenuation = 1.0 / (distance * distance);
-	
 	attenuation *= light.intensity;
+	
+	vec3 radiance = light.diffuse * light.intensity * attenuation;
 
-	vec3 diffuse = diff * light.diffuse * light.intensity;
-	diffuse *= attenuation;
-
-	return diffuse;
+	return (kd * (albedo / PI) + specular) * radiance * NdotL;
 }
 
 
 void main()
 {
-	vec4 col = vec4(0);
+	vec3 col = vec3(0);
 	
 
 	vec3 normal = normalize(TBN * (texture2D(uNormalMap, vTexCoords).rgb) * hasNormalMap
-					+ vNormals * 1.0 - hasNormalMap);
+					+ vNormals * (1.0 - hasNormalMap));
 
 	normal = normalize((vModel * vec4(normal, 0.0)).xyz);
 
-	vec3 albedo = texture2D(uMetallicMap, vTexCoords).rgb;
+	vec3 albedo = texture2D(uAlbedoMap, vTexCoords).rgb * hasAlbedoMap + uAlbedoColor * (1.0 - hasAlbedoMap);
 	float metallic = texture2D(uMetallicMap, vTexCoords).r;
 	float roughness = texture2D(uRoughnessMap, vTexCoords).r;
 
@@ -222,7 +235,7 @@ void main()
 		//vec4 tex = texture2D(uAlbedoMap, vTexCoords);
 		//col = vec4(lightCol, 1) * tex;
 
-		vec3 lightColor = vec3(0);
+		//vec3 lightColor = vec3(0);
 		vec3 viewDir = normalize(uCamPos - vPosition);
 
 		vec3 F0 = vec3(0);
@@ -232,32 +245,27 @@ void main()
 			// Directional
 			if (uLights[i].type == 0)
 			{
-				lightColor += CalcDirLight(uLights[i], normal, viewDir, albedo, metallic, roughness, F0);
+				col += CalcDirLight(uLights[i], normal, viewDir, albedo, metallic, roughness, F0);
 			}
 			// Point
 			else if (uLights[i].type == 1)
 			{
-				lightColor += CalcPointLight(uLights[i], normal, vWorldPosition, viewDir);
+				//col += CalcPointLight(uLights[i], normal, vWorldPosition, viewDir);
+				col += CalcPointLight(uLights[i], normal, vWorldPosition, viewDir, albedo, metallic, roughness, F0);
 			}
 		}
-
-		col = vec4(lightColor, 1);
-
 	}
 	// Deferred
 	else
 	{
 		// If deferred, just output the albedo
-		col = texture2D(uAlbedoMap, vTexCoords);
+		col = albedo;
 		//col.a = smoothness;
 	}
 
-	fragColor = col;
+	fragColor = vec4(col, 1);
 	normalsColor = vec4(normal, 1);
 	positionColor = vec4(vWorldPosition, 1);
-
-	//float depth = LinearizeDepth(gl_FragCoord.z) / uFar;
-	//depthColor = vec4(vec3(depth), 1);
 }
 
 #endif

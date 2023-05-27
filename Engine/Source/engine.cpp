@@ -206,7 +206,7 @@ void Application::Init()
     glEnable(GL_CULL_FACE);
 
     mode = Mode_Model;
-    renderPath = RenderPath::DEFERRED;
+    renderPath = RenderPath::FORWARD;
 
     TexturesManager::LoadTextures();
 }
@@ -688,6 +688,11 @@ void Application::OnImGuiRender()
                                 material = mat;
                                 texIndex = 0;
                             }
+                            ImGui::SameLine();
+                            if (ImGui::Button("Remove"))
+                            {
+                                mat->SetAlbedoMap(nullptr);
+                            }
 
                             ImGui::Dummy({ 0,3.5 });
 
@@ -700,29 +705,52 @@ void Application::OnImGuiRender()
                                 material = mat;
                                 texIndex = 1;
                             }
+                            ImGui::SameLine();
+                            if (ImGui::Button("Remove##1"))
+                            {
+                                mat->SetNormalMap(nullptr);
+                            }
                             
                             ImGui::Dummy({ 0,3.5 });
 
                             ImGui::Text("Metallic Map:");
                             if (auto metallicMap = mat->GetMetallicMap())
+                            {
+                                //glColorMask(GL_FALSE, GL_TRUE, GL_TRUE, GL_TRUE);
                                 ImGui::Image((ImTextureID)metallicMap->GetId(), { 128,128 });
+                                //glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+                            }
                             if (ImGui::Button("Change##2"))
                             {
                                 showTexturesPanel = true;
                                 material = mat;
                                 texIndex = 2;
                             }
+                            ImGui::SameLine();
+                            if (ImGui::Button("Remove##2"))
+                            {
+                                mat->SetMetallicMap(nullptr);
+                            }
 
                             ImGui::Dummy({ 0,3.5 });
 
                             ImGui::Text("Roughness Map:");
                             if (auto specularMap = mat->GetSpecularMap())
+                            {
+                                //glColorMask(GL_TRUE, GL_FALSE, GL_FALSE, GL_FALSE);
                                 ImGui::Image((ImTextureID)specularMap->GetId(), { 128,128 });
+                                //glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+                            }
                             if (ImGui::Button("Change##3"))
                             {
                                 showTexturesPanel = true;
                                 material = mat;
                                 texIndex = 3;
+                            }
+                            ImGui::SameLine();
+                            if (ImGui::Button("Remove##3"))
+                            {
+                                mat->SetSpecularMap(nullptr);
                             }
 
                             ImGui::Dummy({ 0,3.5 });
