@@ -1,7 +1,9 @@
 #include "Engine.h"
 #include "ModelImporter.h"
+#include "TexturesManager.h"
 #include "Renderer/Shader.h"
 #include "Renderer/Framebuffer.h"
+#include "Renderer/Skybox.h"
 
 #include <imgui.h>
 #include <stb_image.h>
@@ -80,6 +82,7 @@ void Application::Init()
 
     lights.emplace_back(Light(LightType::DIRECTIONAL, { 1, 1, 1 }, { 1 ,1, 1 }));
     lights.emplace_back(Light(LightType::DIRECTIONAL, { -1,-1,-1 }, { 0.5, 0.5, 0.5 }));
+    lights.back().SetIntensity(5.f);
 
     lights.emplace_back(Light(LightType::POINT, { -6, 0, 4 }, { 1.00, 0.45, 1. }));
     lights.back().SetIntensity(2.5f);
@@ -145,7 +148,8 @@ void Application::Init()
     postProcessShader = std::make_shared<Shader>("Assets/Shaders/post_process.glsl", "POST_PROCESS");
     debugLightShader = std::make_shared<Shader>("Assets/Shaders/sphere_light.glsl", "SPHERE_LIGHT");
    
-    patrickModel = ModelImporter::ImportModel("Assets/Models/Patrick/Patrick.obj");
+    //patrickModel = ModelImporter::ImportModel("Assets/Models/Patrick/Patrick.obj");
+    patrickModel = ModelImporter::ImportModel("Assets/Models/Cerberus/Cerberus.fbx");
     sphereModel = ModelImporter::ImportModel("Assets/Models/Sphere.fbx");
     planeModel = ModelImporter::ImportModel("Assets/Models/Plane.fbx");
     #pragma endregion
@@ -156,15 +160,17 @@ void Application::Init()
     m1.SetPosition({ 6,0,0 });
     entities.emplace_back(m1);
 
-    Entity m2 = Entity("Center Patrick", patrickModel);
-    m2.SetPosition({ 0,0,0 });
-    entities.emplace_back(m2);
+    //Entity m2 = Entity("Center Patrick", patrickModel);
+    //m2.SetPosition({ 0,0,0 });
+    //entities.emplace_back(m2);
 
-    Entity m3 = Entity("Left Patrick", patrickModel);
-    m3.SetPosition({ -6,0,0 });
-    entities.emplace_back(m3);
+    //Entity m3 = Entity("Left Patrick", patrickModel);
+    //m3.SetPosition({ -6,0,0 });
+    //entities.emplace_back(m3);
 
     #pragma endregion    
+
+    skybox = std::make_shared<Skybox>("Assets/Skybox/Desert.hdr");
 
     glGetIntegerv(GL_MAX_UNIFORM_BLOCK_SIZE, &maxUniformBufferSize);
     glGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT, &uniformBlockAlignment);
@@ -200,15 +206,22 @@ void Application::Init()
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LEQUAL);
     glEnable(GL_CULL_FACE);
 
     mode = Mode_Model;
-    renderPath = RenderPath::DEFERRED;
+    renderPath = RenderPath::FORWARD;
+
+    TexturesManager::LoadTextures();
 }
 
 void Application::Update()
 {
     camera.Update(deltaTime);
+
+    //glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 20, -1, "SKYBOX CREATION");
+    //skybox = std::make_shared<Skybox>("Assets/Skybox/Desert.hdr");
+    //glPopDebugGroup();
 
     #pragma region Global Parameters Uniform Buffer
 
@@ -264,9 +277,7 @@ void Application::Render()
 
     glClearColor(0.0, 0.0, 0.0, 1.0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-    GLuint buffs[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2 };
-    glDrawBuffers(3, buffs);
+        
     
     switch (mode)
     {
@@ -286,8 +297,10 @@ void Application::Render()
         }
         case Mode_Model:
         {
-            glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 1, -1, "Geometry pass");
-            
+            glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 2, -1, "Geometry pass");
+
+            GLuint buffs[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2 };
+            glDrawBuffers(3, buffs);
             globalParamsUbo->BindRange(0, globalParamsOffset, globalParamsSize);
             for (auto& entity : entities)
             {
@@ -295,6 +308,10 @@ void Application::Render()
                 entity.GetModel()->Draw(true);
             }
 
+            glPopDebugGroup();
+
+            glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 1, -1, "Skybox pass");
+            skybox->Draw(camera.GetView(), camera.GetProjection());
             glPopDebugGroup();
 
             break;
@@ -360,8 +377,8 @@ void Application::Render()
     postProcessFbo->Bind();
     glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 4, -1, "Post-Processing Pass");
 
-    glClearColor(0.08, 0.08, 0.08, 1);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    //glClearColor(0.08, 0.08, 0.08, 1);
+    //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     //glDrawBuffer(GL_COLOR_ATTACHMENT0);
 
@@ -615,10 +632,37 @@ void Application::OnImGuiRender()
     }
     ImGui::End();
 
+    ImGui::Begin("Lighting");
+    {
+        int idToDelete = -1;
+        for (int i = 0; i < lights.size(); ++i)
+        {
+            ImGui::PushID(i);
+
+            auto& light = lights[i];
+            if (ImGui::CollapsingHeader(light.GetName().c_str()))
+            {
+                light.OnImGuiRender();
+                ImGui::Separator();
+                if (ImGui::Button("Delete"))
+                    idToDelete = i;
+            }
+
+            ImGui::PopID();
+        }
+
+        if (idToDelete >= 0)
+            lights.erase(lights.begin() + idToDelete);
+    }
+    ImGui::End();
+
     ImGui::Begin("Model");
     {
         if (currentEntity)
         {
+            static std::shared_ptr<Material> material = nullptr;
+            static int texIndex = -1;
+
             auto& pos = currentEntity->GetPosition();
             if (ImGui::DragFloat3("Position", glm::value_ptr(pos), 0.01f))
                 currentEntity->SetPosition(pos);
@@ -634,43 +678,123 @@ void Application::OnImGuiRender()
             ImGui::Separator();
             ImGui::Separator();
 
-            if (ImGui::TreeNodeEx("Materials"))
+            if (ImGui::CollapsingHeader("Material"))
             {
-                for (auto mat : currentEntity->GetModel()->GetMaterials())
+                int i = 0;
+
+                for (auto mesh : currentEntity->GetModel()->GetMeshes())
                 {
-                    if (ImGui::Button(mat->GetName().c_str()))
+                    auto mat = mesh->GetMaterial();
+                    ImGui::Indent();
+                    if (ImGui::CollapsingHeader(mesh->GetName().c_str()))
                     {
-                        for (auto& mesh : currentEntity->GetModel()->GetMeshes())
-                            mesh->SetMaterial(mat);
+                        ImGui::PushID(i);
+                        if (ImGui::TreeNodeEx("Material"))
+                        {
+                            ImGui::Text("Albedo Map:");
+                            if (auto albedoMap = mat->GetAlbedoMap())
+                                ImGui::Image((ImTextureID)albedoMap->GetId(), { 128,128 });
+                            if (ImGui::Button("Change"))
+                            {
+                                showTexturesPanel = true;
+                                material = mat;
+                                texIndex = 0;
+                            }
+                            ImGui::SameLine();
+                            if (ImGui::Button("Remove"))
+                            {
+                                mat->SetAlbedoMap(nullptr);
+                            }
+
+                            ImGui::Dummy({ 0,3.5 });
+
+                            ImGui::Text("Normal Map:");
+                            if (auto normalMap = mat->GetNormalMap())
+                                ImGui::Image((ImTextureID)normalMap->GetId(), { 128,128 });
+                            if (ImGui::Button("Change##1"))
+                            {
+                                showTexturesPanel = true;
+                                material = mat;
+                                texIndex = 1;
+                            }
+                            ImGui::SameLine();
+                            if (ImGui::Button("Remove##1"))
+                            {
+                                mat->SetNormalMap(nullptr);
+                            }
+                            
+                            ImGui::Dummy({ 0,3.5 });
+
+                            ImGui::Text("Metallic Map:");
+                            if (auto metallicMap = mat->GetMetallicMap())
+                            {
+                                //glColorMask(GL_FALSE, GL_TRUE, GL_TRUE, GL_TRUE);
+                                ImGui::Image((ImTextureID)metallicMap->GetId(), { 128,128 });
+                                //glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+                            }
+                            if (ImGui::Button("Change##2"))
+                            {
+                                showTexturesPanel = true;
+                                material = mat;
+                                texIndex = 2;
+                            }
+                            ImGui::SameLine();
+                            if (ImGui::Button("Remove##2"))
+                            {
+                                mat->SetMetallicMap(nullptr);
+                            }
+
+                            ImGui::Dummy({ 0,3.5 });
+
+                            ImGui::Text("Roughness Map:");
+                            if (auto specularMap = mat->GetSpecularMap())
+                            {
+                                //glColorMask(GL_TRUE, GL_FALSE, GL_FALSE, GL_FALSE);
+                                ImGui::Image((ImTextureID)specularMap->GetId(), { 128,128 });
+                                //glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+                            }
+                            if (ImGui::Button("Change##3"))
+                            {
+                                showTexturesPanel = true;
+                                material = mat;
+                                texIndex = 3;
+                            }
+                            ImGui::SameLine();
+                            if (ImGui::Button("Remove##3"))
+                            {
+                                mat->SetSpecularMap(nullptr);
+                            }
+
+                            ImGui::Dummy({ 0,3.5 });
+                            ImGui::Separator();
+                            ImGui::Dummy({ 0,1.75 });
+
+                            ImGui::TreePop();
+                        }
+                        ImGui::PopID();
+
                     }
+                    ImGui::Unindent();
+                    ++i;
                 }
-                ImGui::TreePop();
             }
-        }
-    }
-    ImGui::End();
 
-    ImGui::Begin("Lighting");
-    {
-        int idToDelete = -1;
-        for (int i = 0; i < lights.size(); ++i)
-        {
-            ImGui::PushID(i);
-            
-            auto& light = lights[i];
-            if (ImGui::CollapsingHeader(light.GetName().c_str()))
+            if (texIndex >= 0)
             {
-                light.OnImGuiRender();
-                ImGui::Separator();
-                if (ImGui::Button("Delete"))
-                    idToDelete = i;
+                if (ShowTexturesPanel(material, texIndex))
+                {
+                    material = nullptr;
+                    texIndex = -1;
+                }
+
             }
 
-            ImGui::PopID();
-        }
+            //if (texIndex >= 0)
+            //{
+            //    //ImGui::Begin("Textures", &showTexturesPanel);
 
-        if (idToDelete >= 0)
-            lights.erase(lights.begin() + idToDelete);
+            //}
+        }
     }
     ImGui::End();
 
@@ -740,4 +864,36 @@ void Application::DebugDrawLights()
     glDepthMask(GL_TRUE);
 
     glPopDebugGroup();
+}
+
+bool Application::ShowTexturesPanel(std::shared_ptr<Material> material, int texIndex)
+{
+    bool ret = false;
+
+    if (ImGui::Begin("Textures", &showTexturesPanel))
+    {
+        if (ImGui::BeginTable("", 2))
+        {
+            for (const auto texture : TexturesManager::GetTextures())
+            {
+                ImGui::TableNextColumn();
+                if (ImGui::ImageButton((ImTextureID)texture->GetId(), { 128,128 }))
+                {
+                    switch (texIndex)
+                    {
+                        case 0: material->SetAlbedoMap(texture); ret = true; break;
+                        case 1: material->SetNormalMap(texture); ret = true; break;
+                        case 2: material->SetMetallicMap(texture); ret = true; break;
+                        case 3: material->SetSpecularMap(texture); ret = true; break;
+                    }
+                }
+                ImGui::Text(texture->GetName().c_str());
+            }
+            ImGui::EndTable();
+        }
+
+        ImGui::End();
+    }
+
+    return ret;
 }

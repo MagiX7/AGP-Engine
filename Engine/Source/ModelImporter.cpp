@@ -1,4 +1,5 @@
 #include "ModelImporter.h"
+#include "TexturesManager.h"
 
 #include <iostream>
 #include <memory>
@@ -226,9 +227,10 @@ void ModelImporter::ProcessMaterial(aiMaterial* material, Material& myMaterial, 
         if (loc != std::string::npos)
             fileName.replace(loc, loc + 2, "/");
 
-
         std::string filepath = directory + fileName;
-        myMaterial.SetAlbedoMap(std::make_shared<Texture2D>(filepath));
+        auto tex = std::make_shared<Texture2D>(filepath);
+        TexturesManager::AddTexture(tex);
+        myMaterial.SetAlbedoMap(tex);
     }
     if (material->GetTextureCount(aiTextureType_EMISSIVE) > 0)
     {
@@ -241,7 +243,9 @@ void ModelImporter::ProcessMaterial(aiMaterial* material, Material& myMaterial, 
             fileName.replace(loc, loc + 2, "/");
 
         std::string filepath = directory + fileName;
-        myMaterial.SetEmissiveMap(std::make_shared<Texture2D>(filepath));
+        auto tex = std::make_shared<Texture2D>(filepath);
+        TexturesManager::AddTexture(tex);
+        myMaterial.SetEmissiveMap(tex);
     }
     if (material->GetTextureCount(aiTextureType_SPECULAR) > 0)
     {
@@ -254,7 +258,9 @@ void ModelImporter::ProcessMaterial(aiMaterial* material, Material& myMaterial, 
             fileName.replace(loc, loc + 2, "/");
 
         std::string filepath = directory + fileName;
-        myMaterial.SetSpecularMap(std::make_shared<Texture2D>(filepath));
+        auto tex = std::make_shared<Texture2D>(filepath);
+        TexturesManager::AddTexture(tex);
+        myMaterial.SetSpecularMap(tex);
     }
     if (material->GetTextureCount(aiTextureType_NORMALS) > 0)
     {
@@ -267,7 +273,9 @@ void ModelImporter::ProcessMaterial(aiMaterial* material, Material& myMaterial, 
             fileName.replace(loc, loc + 2, "/");
 
         std::string filepath = directory + fileName;
-        myMaterial.SetNormalMap(std::make_shared<Texture2D>(filepath));
+        auto tex = std::make_shared<Texture2D>(filepath);
+        TexturesManager::AddTexture(tex);
+        myMaterial.SetNormalMap(tex);
     }
     if (material->GetTextureCount(aiTextureType_HEIGHT) > 0)
     {
@@ -280,7 +288,9 @@ void ModelImporter::ProcessMaterial(aiMaterial* material, Material& myMaterial, 
             fileName.replace(loc, loc + 2, "/");
 
         std::string filepath = directory + fileName;
-        myMaterial.SetBumpMap(std::make_shared<Texture2D>(filepath));
+        auto tex = std::make_shared<Texture2D>(filepath);
+        TexturesManager::AddTexture(tex);
+        myMaterial.SetBumpMap(tex);
     }
 
     //myMaterial.createNormalFromBump();

@@ -1,7 +1,9 @@
 #pragma once
 
 #include <glm/glm.hpp>
+
 #include <string>
+#include <unordered_map>
 
 class Shader
 {
@@ -37,10 +39,14 @@ private:
 	std::string ReadFile();
 	void ConstructShader();
 
+	int GetUniformLoc(const std::string& name);
+
 private:
 	unsigned int id;
 	std::string source;
 
 	std::string name;
 	std::string path;
+
+	std::unordered_map<std::string, int> uniformsLocations;
 };

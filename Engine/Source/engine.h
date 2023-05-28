@@ -63,6 +63,7 @@ const uint16_t quadIndices[] =
 };
 
 class Framebuffer;
+class Skybox;
 
 enum class RenderPath
 {
@@ -90,6 +91,8 @@ public:
     inline const glm::vec2& GetViewportSize() const { return viewportSize; }
     inline void SetViewportSize(const glm::vec2& size) { viewportSize = size; }
 
+    inline const std::shared_ptr<Skybox>& GetSkybox() { return skybox; }
+
     inline RenderPath GetRenderPath() { return renderPath; }
 
     inline void SetWindow(GLFWwindow* win) { window = win; }
@@ -100,6 +103,7 @@ private:
     Application& operator=(Application&) {}
 
     void DebugDrawLights();
+    bool ShowTexturesPanel(std::shared_ptr<Material> material, int texIndex);
 
 public:
     bool isRunning;
@@ -111,6 +115,7 @@ private:
 
     bool showRenderOptionsPanel = true;
     bool showExtensionsPanel = true;
+    bool showTexturesPanel = false;
     unsigned int currentRenderTargetId;
 
     // Loop
@@ -172,6 +177,8 @@ private:
     std::shared_ptr<Model> patrickModel;
     std::shared_ptr<Shader> patrickShader;
     std::shared_ptr<Texture2D> patrickTexture;
+
+    std::shared_ptr<Skybox> skybox;
 
     std::shared_ptr<UniformBuffer> localParamsUbo;
     std::shared_ptr<UniformBuffer> globalParamsUbo;

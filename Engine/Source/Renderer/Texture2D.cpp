@@ -16,7 +16,20 @@ Texture2D::Texture2D(const std::string& filePath) : path(filePath)
         std::cout << "Texture with path " << path << " couldn't be found" << std::endl;
     }
 
-    internalFormat = dataFormat = 0;
+    int start = path.find_last_of("/");
+    if (start < 0)
+    {
+        start = path.find_last_of("\\");
+    }
+    name = path.substr(start + 1, path.length());
+
+    if (name == "R.tga")
+    {
+        int a = 0;
+        a += 9;
+    }
+
+    internalFormat = dataFormat = -1;
     if (channels == 4)
     {
         internalFormat = GL_RGBA8;
@@ -26,6 +39,11 @@ Texture2D::Texture2D(const std::string& filePath) : path(filePath)
     {
         internalFormat = GL_RGB8;
         dataFormat = GL_RGB;
+    }
+    else if (channels == 1)
+    {
+        internalFormat = GL_R8;
+        dataFormat = GL_RED;
     }
 
     width = w;

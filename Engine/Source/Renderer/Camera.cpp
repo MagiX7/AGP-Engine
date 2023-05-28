@@ -8,7 +8,7 @@
 
 #include <iostream>
 
-#define CAMERA_SPEED 20.0f
+#define CAMERA_SPEED 40.0f
 
 Camera::Camera(const glm::vec3& pos, const glm::vec3& target, float verticalFov, float camAspectRatio)
 	: position(pos), yFov(verticalFov), aspectRatio(camAspectRatio)
@@ -16,7 +16,7 @@ Camera::Camera(const glm::vec3& pos, const glm::vec3& target, float verticalFov,
 	this->target = target;
 
 	nearClip = 0.1f;
-	farClip = 100.0f;
+	farClip = 1000.0f;
 	ReCalculateMatrices();
 }
 
@@ -62,13 +62,13 @@ void Camera::Update(float dt)
 
 		if (input.keys[K_E] == BUTTON_PRESS)
 		{
-			position.y += dt * speed;
+			position += glm::vec3(0,1,0) * dt * speed;
 			recalc = true;
 		}
 
 		if (input.keys[K_Q] == BUTTON_PRESS)
 		{
-			position.y -= dt * speed;
+			position -= glm::vec3(0, 1, 0) * dt * speed;
 			recalc = true;
 		}
 
@@ -76,12 +76,12 @@ void Camera::Update(float dt)
 		glm::vec2 delta = input.mousePos - lastMousePos;
 		if (delta.x != 0)
 		{
-			pitch += delta.x * dt * 0.1f;
+			yaw += delta.x * dt * 4.0f;
 			recalc = true;
 		}
 		if (delta.y != 0)
 		{
-			yaw += /*(up.y > 0.0f ? 1.0f : -1.0f) **/ delta.y * dt * 0.1f;
+			pitch -= /*(up.y > 0.0f ? 1.0f : -1.0f) **/ delta.y * dt * 4.0f;
 			recalc = true;
 		}
 	}
@@ -101,14 +101,18 @@ void Camera::SetViewportSize(uint32_t width, uint32_t height)
 void Camera::ReCalculateMatrices()
 {
 	proj = glm::perspective(glm::radians(yFov), aspectRatio, nearClip, farClip);
-	//const glm::mat4 transform = glm::translate(glm::mat4(1.0), position) * glm::eulerAngleXYZ(rotation.x, rotation.y, rotation.z);
-	const glm::mat4 transform = glm::translate(glm::mat4(1.0), position) * glm::toMat4(glm::quat(glm::vec3(-yaw, -pitch, 0.0)));
-	view = glm::inverse(transform);
 
-	glm::vec3 direction = glm::normalize(position - target);
-	right = glm::normalize(glm::cross({ 0,1,0 }, direction));
-	up = glm::cross(direction, right);
-	forward = glm::normalize(glm::cross(up, right));
+	glm::vec3 front;
+	front.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
+	front.y = sin(glm::radians(pitch));
+	front.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
+	forward = front;
 
+	right = glm::normalize(glm::cross({ 0,1,0 }, forward));
+	up = glm::cross(forward, right);
+	right = glm::normalize(glm::cross(forward, up));
+
+	view = glm::lookAt(position, position + forward, up);
+	
 	viewProj = proj * view;
 }

@@ -31,10 +31,11 @@ public:
 	void Bind();
 	void Unbind();
 
-	inline unsigned int GetId() { return id; }
+	[[nodiscard]] inline unsigned int GetId() { return id; }
+	[[nodiscard]] inline uint32_t GetCount() { return count; }
 
 	void SetLayout(const VertexBufferLayout& bufferLayout);
-	inline const VertexBufferLayout& GetLayout() { return layout; }
+	[[nodiscard]] inline const VertexBufferLayout& GetLayout() { return layout; }
 
 private:
 	unsigned int id;
@@ -52,7 +53,7 @@ public:
 	void Bind();
 	void Unbind();
 
-	inline const uint32_t& GetCount() const { return count; }
+	[[nodiscard]] inline const uint32_t& GetCount() const { return count; }
 
 private:
 	unsigned int id;
