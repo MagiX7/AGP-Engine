@@ -74,6 +74,10 @@ layout(location = 0) uniform sampler2D uAlbedoMap;
 layout(location = 1) uniform sampler2D uNormalMap;
 layout(location = 2) uniform sampler2D uMetallicMap;
 layout(location = 3) uniform sampler2D uRoughnessMap;
+layout(location = 5) uniform samplerCube irradianceMap;
+layout(location = 6) uniform samplerCube skyboxPrefilterMap;
+layout(location = 7) uniform sampler2D skyboxBrdf;
+
 uniform int hasAlbedoMap;
 uniform int hasNormalMap;
 uniform int hasMetallicMap;
@@ -228,6 +232,7 @@ void main()
 	vec3 albedo = texture2D(uAlbedoMap, vTexCoords).rgb * hasAlbedoMap + uAlbedoColor * (1.0 - hasAlbedoMap);
 	float metallic = texture2D(uMetallicMap, vTexCoords).r;
 	float roughness = texture2D(uRoughnessMap, vTexCoords).r;
+	vec3 irradiance = texture(irradianceMap, normal).rgb;
 
 	// Forward
 	if (renderMode == 0)
@@ -254,6 +259,21 @@ void main()
 				col += CalcPointLight(uLights[i], normal, vWorldPosition, viewDir, albedo, metallic, roughness, F0);
 			}
 		}
+
+		vec3 F = FresnelSchlickRoughness(max(dot(normal, viewDir), 0.0), F0, roughness);
+		vec3 ks = F;
+		vec3 kd = 1.0 - ks;
+		kd *= 1.0 - metallic;
+		vec3 diffuse = irradiance * albedo;
+		vec3 ambient = kd * diffuse;
+		
+		vec3 R = reflect(-viewDir, normal);
+		vec3 prefilteredColor = textureLod(skyboxPrefilterMap, R, roughness * 2.2).rgb;
+		vec2 brdf = texture2D(skyboxBrdf, vec2(max(dot(normal, viewDir), 0.0)), roughness).rg;
+		vec3 specular = prefilteredColor * (F * brdf.x + brdf.y);
+
+		ambient += specular;
+		col += ambient;
 	}
 	// Deferred
 	else

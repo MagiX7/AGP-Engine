@@ -1,4 +1,5 @@
 #include "Material.h"
+#include "../Renderer/Skybox.h"
 
 #include "../engine.h"
 
@@ -46,6 +47,16 @@ void Material::Bind()
 		specularMap->Bind(3);
 		shader->SetUniform1i("uRoughnessMap", 3);
 	}
+
+	std::shared_ptr<Skybox> skybox = Application::GetInstance().GetSkybox();
+	skybox->BindIrradianceMap(5);
+	shader->SetUniform1i("irradianceMap", 5);
+
+	skybox->BindPrefilterMap(6);
+	shader->SetUniform1i("skyboxPrefilterMap", 6);
+
+	skybox->BindBRDF(7);
+	shader->SetUniform1i("skyboxBrdf", 7);
 	
 }
 

@@ -91,6 +91,8 @@ public:
     inline const glm::vec2& GetViewportSize() const { return viewportSize; }
     inline void SetViewportSize(const glm::vec2& size) { viewportSize = size; }
 
+    inline const std::shared_ptr<Skybox>& GetSkybox() { return skybox; }
+
     inline RenderPath GetRenderPath() { return renderPath; }
 
     inline void SetWindow(GLFWwindow* win) { window = win; }
