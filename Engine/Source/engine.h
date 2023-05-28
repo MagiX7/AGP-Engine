@@ -165,6 +165,7 @@ private:
     std::shared_ptr<Framebuffer> gBufferFbo;
     std::shared_ptr<Framebuffer> deferredPassFbo;
     std::shared_ptr<Framebuffer> postProcessFbo;
+    std::shared_ptr<Framebuffer> skyboxFbo;
 
     glm::vec2 viewportSize = glm::vec2(0);
 

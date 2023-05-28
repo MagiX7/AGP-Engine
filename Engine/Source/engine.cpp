@@ -129,13 +129,14 @@ void Application::Init()
 
     #pragma region Framebuffers
 
-    FramebufferAttachments att{ true, true, true, true };
+    FramebufferAttachments att{ true, true, true, true, true, true };
     gBufferFbo = std::make_shared<Framebuffer>(att, viewportSize.x, viewportSize.y);
 
     FramebufferAttachments att2{ true, false, false, true };
     deferredPassFbo = std::make_shared<Framebuffer>(att2, viewportSize.x, viewportSize.y);
-    
     postProcessFbo = std::make_shared<Framebuffer>(att2, viewportSize.x, viewportSize.y);
+    FramebufferAttachments att3{ true, false, false, false};
+    skyboxFbo = std::make_shared<Framebuffer>(att3, viewportSize.x, viewportSize.y);
 
     currentRenderTargetId = 0;
 
@@ -210,7 +211,7 @@ void Application::Init()
     glEnable(GL_CULL_FACE);
 
     mode = Mode_Model;
-    renderPath = RenderPath::FORWARD;
+    renderPath = RenderPath::DEFERRED;
 
     TexturesManager::LoadTextures();
 }
@@ -299,8 +300,8 @@ void Application::Render()
         {
             glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 2, -1, "Geometry pass");
 
-            GLuint buffs[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2 };
-            glDrawBuffers(3, buffs);
+            GLuint buffs[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3, GL_COLOR_ATTACHMENT4 };
+            glDrawBuffers(5, buffs);
             globalParamsUbo->BindRange(0, globalParamsOffset, globalParamsSize);
             for (auto& entity : entities)
             {
@@ -310,9 +311,12 @@ void Application::Render()
 
             glPopDebugGroup();
 
-            glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 1, -1, "Skybox pass");
-            skybox->Draw(camera.GetView(), camera.GetProjection());
-            glPopDebugGroup();
+            if (renderPath == RenderPath::FORWARD)
+            {
+                glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 1, -1, "Skybox pass");
+                skybox->Draw(camera.GetView(), camera.GetProjection());
+                glPopDebugGroup();
+            }
 
             break;
         }
@@ -327,6 +331,13 @@ void Application::Render()
 
     if (renderPath == RenderPath::DEFERRED)
     {
+        skyboxFbo->Bind();
+        glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 1, -1, "Skybox pass");
+        skybox->Draw(camera.GetView(), camera.GetProjection());
+        glPopDebugGroup();
+        skyboxFbo->Unbind();
+
+
         glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 3, -1, "Deferred pass");
         
         deferredPassFbo->Bind();
@@ -353,6 +364,29 @@ void Application::Render()
         glActiveTexture(GL_TEXTURE3);
         glBindTexture(GL_TEXTURE_2D, gBufferFbo->GetDepthAttachment());
         deferredPassShader->SetUniform1i("uDepthTexture", 3);
+
+        glActiveTexture(GL_TEXTURE4);
+        glBindTexture(GL_TEXTURE_2D, gBufferFbo->GetMetallicAttachment());
+        deferredPassShader->SetUniform1i("uMetallicMap", 4);
+
+        glActiveTexture(GL_TEXTURE5);
+        glBindTexture(GL_TEXTURE_2D, gBufferFbo->GetRoughnessAttachment());
+        deferredPassShader->SetUniform1i("uRoughnessMap", 5);
+
+        // Skybox
+        skybox->BindIrradianceMap(6);
+        deferredPassShader->SetUniform1i("uIrradianceMap", 6);
+
+        skybox->BindPrefilterMap(7);
+        deferredPassShader->SetUniform1i("uSkyboxPrefilterMap", 7);
+
+        skybox->BindBRDF(8);
+        deferredPassShader->SetUniform1i("uSkyboxBrdf", 8);
+
+        glActiveTexture(GL_TEXTURE9);
+        glBindTexture(GL_TEXTURE_2D, skyboxFbo->GetColorAttachment());
+        deferredPassShader->SetUniform1i("uSkybox", 9);
+
 
         globalParamsUbo->BindRange(0, globalParamsOffset, globalParamsSize);
 

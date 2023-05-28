@@ -93,8 +93,9 @@ in mat4 vModel;
 layout(location = 0) out vec4 fragColor;
 layout(location = 1) out vec4 normalsColor;
 layout(location = 2) out vec4 positionColor;
-layout(location = 3) out vec4 depthColor;
-layout(location = 4) out vec4 specularColor;
+layout(location = 3) out vec4 metallicColor;
+layout(location = 4) out vec4 roughnessColor;
+layout(location = 5) out vec4 depthColor;
 
 
 const float PI = 3.14159265359;
@@ -280,12 +281,15 @@ void main()
 	{
 		// If deferred, just output the albedo
 		col = albedo;
-		//col.a = smoothness;
+		//metallicColor = vec4(vec3(metallic), 1);
+		//roughnessColor = vec4(vec3(roughness), 1);
 	}
 
 	fragColor = vec4(col, 1);
 	normalsColor = vec4(normal, 1);
 	positionColor = vec4(vWorldPosition, 1);
+	metallicColor = vec4(vec3(metallic), 1);
+	roughnessColor = vec4(vec3(roughness), 1);
 }
 
 #endif

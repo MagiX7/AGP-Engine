@@ -8,6 +8,8 @@ struct FramebufferAttachments
 	bool includeNormals = true;
 	bool includePosition = true;
 	bool includeDepth = true;
+	bool includeMetallic = false;
+	bool includeRoughness = false;
 };
 
 class Framebuffer
@@ -26,6 +28,8 @@ public:
 	inline unsigned int GetNormalsAttachment() { return normalsAttachment; }
 	inline unsigned int GetPositionAttachment() { return positionAttachment; }
 	inline unsigned int GetDepthAttachment() { return depthAttachment; }
+	inline unsigned int GetMetallicAttachment() { return metallicAttachment; }
+	inline unsigned int GetRoughnessAttachment() { return roughnessAttachment; }
 
 	glm::vec2 GetSize() { return { width, height }; }
 
@@ -39,6 +43,8 @@ private:
 	unsigned int positionAttachment = -1;
 	unsigned int depthAttachment = -1;
 	unsigned int depthRenderbuffer = -1;
+	unsigned int metallicAttachment = -1;
+	unsigned int roughnessAttachment = -1;
 	//unsigned int renderedBufferRenderer;
 
 	float width, height;

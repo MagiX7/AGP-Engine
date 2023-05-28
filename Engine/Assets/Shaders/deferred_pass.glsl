@@ -43,6 +43,13 @@ layout(location = 1) uniform sampler2D uNormalsTexture;
 layout(location = 2) uniform sampler2D uPositionTexture;
 layout(location = 3) uniform sampler2D uDepthTexture;
 
+layout(location = 4) uniform sampler2D uMetallicMap;
+layout(location = 5) uniform sampler2D uRoughnessMap;
+layout(location = 6) uniform samplerCube uIrradianceMap;
+layout(location = 7) uniform samplerCube uSkyboxPrefilterMap;
+layout(location = 8) uniform sampler2D uSkyboxBrdf;
+layout(location = 9) uniform sampler2D uSkybox;
+
 uniform int renderTarget;
 
 in vec3 vPosition;
@@ -52,50 +59,128 @@ in vec2 vTexCoords;
 layout(location = 0) out vec4 fragColor;
 
 
-vec3 CalcDirLight(Light light, vec3 normal, vec3 viewDir)
+
+const float PI = 3.14159265359;
+
+// --------------------------------------------------------------------
+
+vec3 FresnelSchlickRoughness(float cosTheta, vec3 F0, float roughness)
 {
-	vec3 lightDir = normalize(light.position);
-
-	// Diffuse shading
-	float diff = max(dot(normal, lightDir), 0.0);
-
-	// Specular shading
-	//vec3 reflectDir = reflect(-lightDir, normal);
-	//float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);
-	//spec = step(0.5f, spec);
-	
-	vec3 diffuse = diff * light.diffuse * light.intensity;
-	return diffuse;
+	return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
 }
 
-vec3 CalcPointLight(Light light, vec3 normal, vec3 fragPos, vec3 viewDir)
+vec3 FresnelSchlick(float cosTheta, vec3 F0)
+{
+	return  F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
+}
+
+float DistributionGGX(vec3 N, vec3 H, float roughness)
+{
+	float a2 = roughness * roughness;
+	float NdotH = max(dot(N, H), 0.0);
+	float NdotH2 = NdotH * NdotH;
+
+	float denom = (NdotH2 * (a2 - 1.0) + 1.0);
+	denom = PI * denom * denom;
+	denom = max(denom, 0.00001);
+
+	return a2 / denom;
+}
+
+float GeometrySchlickGGX(float X, float roughness)
+{
+	float k = roughness / 2.0;
+	float denom = X * (1.0 - k) + k;
+	denom = max(denom, 0.00001);
+
+	return X / denom;
+}
+
+float GeometrySmith(float NdotV, float NdotL, float roughness)
+{
+	float ggx2 = GeometrySchlickGGX(NdotV, roughness);
+	float ggx1 = GeometrySchlickGGX(NdotL, roughness);
+
+	return ggx1 * ggx2;
+}
+
+
+// --------------------------------------------------------------------
+
+
+
+vec3 CalcDirLight(in Light light, in vec3 normal, in vec3 viewDir, in vec3 albedo, in float metallic, in float roughness, out vec3 F0)
+{
+	vec3 lightDir = normalize(light.position);
+	vec3 halfway = normalize(viewDir + lightDir);
+
+	float NdotL = max(dot(normal, lightDir), 0.0);
+	float NdotV = max(dot(normal, viewDir), 0.0);
+	float NdotH = max(dot(normal, halfway), 0.0);
+
+	
+	F0 = vec3(0.04);
+	F0 = mix(F0, albedo, metallic);
+
+	float NDF = DistributionGGX(normal, halfway, roughness);
+	float G = GeometrySmith(NdotV, NdotL, roughness);
+	vec3 F = FresnelSchlick(max(dot(halfway, viewDir), 0.0), F0);
+
+	vec3 numerator = NDF * F * G;
+	float denominator = 4 * max((NdotV * NdotL), 0.0001);
+	vec3 specular = numerator / denominator;
+
+
+	vec3 ks = F;
+	vec3 kd = vec3(1.0) - ks;
+	kd *= (1.0f - metallic);
+
+
+	vec3 radiance = light.diffuse * light.intensity;
+
+	return (kd * (albedo / PI) + specular) * radiance * NdotL;
+}
+
+vec3 CalcPointLight(Light light, vec3 normal, vec3 fragPos, vec3 viewDir, in vec3 albedo, in float metallic, in float roughness, out vec3 F0)
 {
 	vec3 lightDir = normalize(light.position - fragPos);
 
-	// Diffuse shading
-	float diff = max(dot(normal, lightDir), 0.0);
+	vec3 halfway = normalize(viewDir + lightDir);
 
-	// Specular shading
-	//vec3 reflectDir = reflect(-lightDir, normal);
-	//float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);
-	//spec = step(0.5f, spec);
+	float NdotL = max(dot(normal, lightDir), 0.0);
+	float NdotV = max(dot(normal, viewDir), 0.0);
+	float NdotH = max(dot(normal, halfway), 0.0);
 
-	// Attenuation
+	
+	F0 = vec3(0.04);
+	F0 = mix(F0, albedo, metallic);
+
+	float NDF = DistributionGGX(normal, halfway, roughness);
+	float G = GeometrySmith(NdotV, NdotL, roughness);
+	vec3 F = FresnelSchlick(max(dot(halfway, viewDir), 0.0), F0);
+
+	vec3 numerator = NDF * F * G;
+	float denominator = 4 * max((NdotV * NdotL), 0.0001);
+	vec3 specular = numerator / denominator;
+
+
+	vec3 ks = F;
+	vec3 kd = vec3(1.0) - ks;
+	kd *= (1.0f - metallic);
+
 	float distance = length(fragPos - light.position);
     float attenuation = 1.0 / (distance * distance);
-	
 	attenuation *= light.intensity;
+	
+	vec3 radiance = light.diffuse * light.intensity * attenuation;
 
-	vec3 diffuse = diff * light.diffuse * light.intensity;
-	diffuse *= attenuation;
-
-	return diffuse;
+	return (kd * (albedo / PI) + specular) * radiance * NdotL;
 }
 
 float LinearizeDepth(float depth) 
 {
     float z = depth * 2.0 - 1.0; // back to NDC 
-    return (2.0 * uNear * uFar) / (uFar + uNear - z * (uFar - uNear));	
+    return (2.0 * uNear * uFar) / (uFar + uNear - z * (uFar - uNear));
 }
 
 void main()
@@ -104,28 +189,55 @@ void main()
 	vec3 position = texture2D(uPositionTexture, vTexCoords).xyz;
 	vec3 viewDir = normalize(uCamPos - position);
 	
-	vec3 normals = texture2D(uNormalsTexture, vTexCoords).rgb;
-	vec3 colorTexture = texture2D(uColorTexture, vTexCoords).rgb;
-	float specular = texture2D(uColorTexture, vTexCoords).a;
+	float depth = LinearizeDepth(texture2D(uDepthTexture, vTexCoords).r) / uFar;
+	if (depth >= 0.99)
+	{
+		fragColor = texture2D(uSkybox, vTexCoords);
+		return;
+	}
 
-	vec3 lightColor = vec3(0);
+	vec3 normal = texture2D(uNormalsTexture, vTexCoords).rgb;
+	vec3 albedo = texture2D(uColorTexture, vTexCoords).rgb;
+	float metallic = texture2D(uMetallicMap, vTexCoords).r;
+	float roughness = texture2D(uRoughnessMap, vTexCoords).r;
+	vec3 irradiance = texture(uIrradianceMap, normal).rgb;
+
+	vec3 col = vec3(0);
 
 	// Calculate lighting
+	vec3 F0 = vec3(0);
+
 	for (int i = 0; i < uLightCount; ++i)
 	{
 		// Directional
-		if(uLights[i].type == 0)
+		if (uLights[i].type == 0)
 		{
-			lightColor += CalcDirLight(uLights[i], normals, viewDir);
+			col += CalcDirLight(uLights[i], normal, viewDir, albedo, metallic, roughness, F0);
 		}
 		// Point
-		else if(uLights[i].type == 1)
+		else if (uLights[i].type == 1)
 		{
-			lightColor += CalcPointLight(uLights[i], normals, position, viewDir);
+			//col += CalcPointLight(uLights[i], normal, position, viewDir);
+			col += CalcPointLight(uLights[i], normal, position, viewDir, albedo, metallic, roughness, F0);
 		}
 	}
 
-	fragColor = vec4(colorTexture * lightColor, 1);
+	vec3 F = FresnelSchlickRoughness(max(dot(normal, viewDir), 0.0), F0, roughness);
+	vec3 ks = F;
+	vec3 kd = 1.0 - ks;
+	kd *= 1.0 - metallic;
+	vec3 diffuse = irradiance * albedo;
+	vec3 ambient = kd * diffuse;
+	
+	vec3 R = reflect(-viewDir, normal);
+	vec3 prefilteredColor = textureLod(uSkyboxPrefilterMap, R, roughness * 2.2).rgb;
+	vec2 brdf = texture2D(uSkyboxBrdf, vec2(max(dot(normal, viewDir), 0.0)), roughness).rg;
+	vec3 specular = prefilteredColor * (F * brdf.x + brdf.y);
+
+	ambient += specular;
+	col += ambient;
+
+	fragColor = vec4(col, 1);
 }
 
 #endif
