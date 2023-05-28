@@ -166,6 +166,7 @@
     <ClCompile Include="Source\Renderer\Camera.cpp" />
     <ClCompile Include="Source\Renderer\Framebuffer.cpp" />
     <ClCompile Include="Source\Renderer\Shader.cpp" />
+    <ClCompile Include="Source\Renderer\Skybox.cpp" />
     <ClCompile Include="Source\Renderer\VertexArray.cpp" />
     <ClCompile Include="Source\Resources\Material.cpp" />
     <ClCompile Include="Source\Resources\Model.cpp" />
@@ -195,6 +196,7 @@
     <ClInclude Include="Source\Renderer\Camera.h" />
     <ClInclude Include="Source\Renderer\Framebuffer.h" />
     <ClInclude Include="Source\Renderer\Shader.h" />
+    <ClInclude Include="Source\Renderer\Skybox.h" />
     <ClInclude Include="Source\Renderer\VertexArray.h" />
     <ClInclude Include="Source\Resources\Material.h" />
     <ClInclude Include="Source\Resources\Model.h" />

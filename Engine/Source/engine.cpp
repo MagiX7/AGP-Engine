@@ -3,6 +3,7 @@
 #include "TexturesManager.h"
 #include "Renderer/Shader.h"
 #include "Renderer/Framebuffer.h"
+#include "Renderer/Skybox.h"
 
 #include <imgui.h>
 #include <stb_image.h>
@@ -169,6 +170,8 @@ void Application::Init()
 
     #pragma endregion    
 
+    skybox = std::make_shared<Skybox>("Assets/Skybox/Desert.hdr");
+
     glGetIntegerv(GL_MAX_UNIFORM_BLOCK_SIZE, &maxUniformBufferSize);
     glGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT, &uniformBlockAlignment);
     localParamsUbo = std::make_shared<UniformBuffer>(maxUniformBufferSize, uniformBlockAlignment);
@@ -203,6 +206,7 @@ void Application::Init()
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LEQUAL);
     glEnable(GL_CULL_FACE);
 
     mode = Mode_Model;
@@ -214,6 +218,10 @@ void Application::Init()
 void Application::Update()
 {
     camera.Update(deltaTime);
+
+    //glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 20, -1, "SKYBOX CREATION");
+    //skybox = std::make_shared<Skybox>("Assets/Skybox/Desert.hdr");
+    //glPopDebugGroup();
 
     #pragma region Global Parameters Uniform Buffer
 
@@ -269,9 +277,7 @@ void Application::Render()
 
     glClearColor(0.0, 0.0, 0.0, 1.0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-    GLuint buffs[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2 };
-    glDrawBuffers(3, buffs);
+        
     
     switch (mode)
     {
@@ -291,8 +297,10 @@ void Application::Render()
         }
         case Mode_Model:
         {
-            glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 1, -1, "Geometry pass");
-            
+            glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 2, -1, "Geometry pass");
+
+            GLuint buffs[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2 };
+            glDrawBuffers(3, buffs);
             globalParamsUbo->BindRange(0, globalParamsOffset, globalParamsSize);
             for (auto& entity : entities)
             {
@@ -300,6 +308,10 @@ void Application::Render()
                 entity.GetModel()->Draw(true);
             }
 
+            glPopDebugGroup();
+
+            glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 1, -1, "Skybox pass");
+            skybox->Draw(camera.GetView(), camera.GetProjection());
             glPopDebugGroup();
 
             break;
@@ -365,8 +377,8 @@ void Application::Render()
     postProcessFbo->Bind();
     glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 4, -1, "Post-Processing Pass");
 
-    glClearColor(0.08, 0.08, 0.08, 1);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    //glClearColor(0.08, 0.08, 0.08, 1);
+    //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     //glDrawBuffer(GL_COLOR_ATTACHMENT0);
 

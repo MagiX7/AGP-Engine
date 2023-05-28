@@ -63,6 +63,7 @@ const uint16_t quadIndices[] =
 };
 
 class Framebuffer;
+class Skybox;
 
 enum class RenderPath
 {
@@ -174,6 +175,8 @@ private:
     std::shared_ptr<Model> patrickModel;
     std::shared_ptr<Shader> patrickShader;
     std::shared_ptr<Texture2D> patrickTexture;
+
+    std::shared_ptr<Skybox> skybox;
 
     std::shared_ptr<UniformBuffer> localParamsUbo;
     std::shared_ptr<UniformBuffer> globalParamsUbo;
