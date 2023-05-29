@@ -41,23 +41,25 @@ layout(binding = 0, std140) uniform GlobalParams
 layout(location = 0) uniform sampler2D uColorTexture;
 layout(location = 1) uniform sampler2D uNormalsTexture;
 layout(location = 2) uniform sampler2D uPositionTexture;
-layout(location = 3) uniform sampler2D uDepthTexture;
 
-layout(location = 4) uniform sampler2D uMetallicMap;
-layout(location = 5) uniform sampler2D uRoughnessMap;
-layout(location = 6) uniform samplerCube uIrradianceMap;
-layout(location = 7) uniform samplerCube uSkyboxPrefilterMap;
-layout(location = 8) uniform sampler2D uSkyboxBrdf;
-layout(location = 9) uniform sampler2D uSkybox;
+layout(location = 3) uniform sampler2D uMetallicMap;
+layout(location = 4) uniform sampler2D uRoughnessMap;
 
-uniform int renderTarget;
+layout(location = 5) uniform samplerCube uIrradianceMap;
+layout(location = 6) uniform samplerCube uSkyboxPrefilterMap;
+layout(location = 7) uniform sampler2D uSkyboxBrdf;
+layout(location = 8) uniform sampler2D uSkybox;
+
+layout(location = 9) uniform sampler2D uSSAOTexture;
+layout(location = 10) uniform sampler2D uDepthTexture;
+
+uniform bool uSsaoEnabled;
 
 in vec3 vPosition;
 in vec2 vTexCoords;
 
 
 layout(location = 0) out vec4 fragColor;
-
 
 
 const float PI = 3.14159265359;
@@ -201,6 +203,7 @@ void main()
 	float metallic = texture2D(uMetallicMap, vTexCoords).r;
 	float roughness = texture2D(uRoughnessMap, vTexCoords).r;
 	vec3 irradiance = texture(uIrradianceMap, normal).rgb;
+	float ssao = texture2D(uSSAOTexture, vTexCoords).r;
 
 	vec3 col = vec3(0);
 
@@ -222,21 +225,32 @@ void main()
 		}
 	}
 
+	
+
 	vec3 F = FresnelSchlickRoughness(max(dot(normal, viewDir), 0.0), F0, roughness);
 	vec3 ks = F;
 	vec3 kd = 1.0 - ks;
 	kd *= 1.0 - metallic;
 	vec3 diffuse = irradiance * albedo;
-	vec3 ambient = kd * diffuse;
+
+	if (!uSsaoEnabled)
+		ssao = 1.0;
+	vec3 ambient = kd * diffuse * ssao;
 	
+	//if (uSsaoEnabled)
+		//ambient *= (ssao);
+
 	vec3 R = reflect(-viewDir, normal);
 	vec3 prefilteredColor = textureLod(uSkyboxPrefilterMap, R, roughness * 2.2).rgb;
 	vec2 brdf = texture2D(uSkyboxBrdf, vec2(max(dot(normal, viewDir), 0.0)), roughness).rg;
-	vec3 specular = prefilteredColor * (F * brdf.x + brdf.y);
+	vec3 specular = prefilteredColor * (F * brdf.x + brdf.y);	
 
 	ambient += specular;
+	
 	col += ambient;
+	
 
+	//col = vec3(ssao);
 	fragColor = vec4(col, 1);
 }
 

@@ -12,6 +12,7 @@
 #include <glm/gtx/euler_angles.hpp>
 
 #include <iostream>
+#include <random>
 
 
 Image LoadImage(const char* filename)
@@ -129,14 +130,19 @@ void Application::Init()
 
     #pragma region Framebuffers
 
-    FramebufferAttachments att{ true, true, true, true, true, true };
+    FramebufferAttachments att{ true, 4, true, true, true, true, true };
     gBufferFbo = std::make_shared<Framebuffer>(att, viewportSize.x, viewportSize.y);
 
-    FramebufferAttachments att2{ true, false, false, true };
+    FramebufferAttachments att2{ true, 4, false, false, true };
     deferredPassFbo = std::make_shared<Framebuffer>(att2, viewportSize.x, viewportSize.y);
     postProcessFbo = std::make_shared<Framebuffer>(att2, viewportSize.x, viewportSize.y);
-    FramebufferAttachments att3{ true, false, false, false};
+    
+    FramebufferAttachments att3{ true, 4, false, false, false};
     skyboxFbo = std::make_shared<Framebuffer>(att3, viewportSize.x, viewportSize.y);
+    
+    FramebufferAttachments att4{ true, 1, false, false, false};
+    ssaoFbo = std::make_shared<Framebuffer>(att4, viewportSize.x, viewportSize.y);
+    blurredSsaoFbo = std::make_shared<Framebuffer>(att4, viewportSize.x, viewportSize.y);
 
     currentRenderTargetId = 0;
 
@@ -148,22 +154,24 @@ void Application::Init()
     deferredPassShader = std::make_shared<Shader>("Assets/Shaders/deferred_pass.glsl", "DEFERRED");
     postProcessShader = std::make_shared<Shader>("Assets/Shaders/post_process.glsl", "POST_PROCESS");
     debugLightShader = std::make_shared<Shader>("Assets/Shaders/sphere_light.glsl", "SPHERE_LIGHT");
-   
-    //patrickModel = ModelImporter::ImportModel("Assets/Models/Patrick/Patrick.obj");
-    patrickModel = ModelImporter::ImportModel("Assets/Models/Cerberus/Cerberus.fbx");
+    ssaoShader = std::make_shared<Shader>("Assets/Shaders/ssao.glsl", "SSAO");
+    blurredSsaoShader = std::make_shared<Shader>("Assets/Shaders/ssao_blur.glsl", "SSAO_BLUR");
+
+    patrickModel = ModelImporter::ImportModel("Assets/Models/Patrick/Patrick.obj");
+    //patrickModel = ModelImporter::ImportModel("Assets/Models/Cerberus/Cerberus.fbx");
     sphereModel = ModelImporter::ImportModel("Assets/Models/Sphere.fbx");
     planeModel = ModelImporter::ImportModel("Assets/Models/Plane.fbx");
     #pragma endregion
 
     #pragma region Entities
 
-    Entity m1 = Entity("Right Patrick", patrickModel);
-    m1.SetPosition({ 6,0,0 });
-    entities.emplace_back(m1);
+    //Entity m1 = Entity("Right Patrick", patrickModel);
+    //m1.SetPosition({ 6,0,0 });
+    //entities.emplace_back(m1);
 
-    //Entity m2 = Entity("Center Patrick", patrickModel);
-    //m2.SetPosition({ 0,0,0 });
-    //entities.emplace_back(m2);
+    Entity m2 = Entity("Center Patrick", patrickModel);
+    m2.SetPosition({ 0,0,0 });
+    entities.emplace_back(m2);
 
     //Entity m3 = Entity("Left Patrick", patrickModel);
     //m3.SetPosition({ -6,0,0 });
@@ -177,6 +185,7 @@ void Application::Init()
     glGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT, &uniformBlockAlignment);
     localParamsUbo = std::make_shared<UniformBuffer>(maxUniformBufferSize, uniformBlockAlignment);
     globalParamsUbo = std::make_shared<UniformBuffer>(maxUniformBufferSize, uniformBlockAlignment);
+    ssaoParamsUbo = std::make_shared<UniformBuffer>(maxUniformBufferSize, uniformBlockAlignment);
 
     #pragma region Screen Space Buffers
 
@@ -214,11 +223,17 @@ void Application::Init()
     renderPath = RenderPath::DEFERRED;
 
     TexturesManager::LoadTextures();
+
+    GenerateSSAOKernel();
 }
 
 void Application::Update()
 {
     camera.Update(deltaTime);
+
+    gBufferFbo->Resize(viewportSize.x, viewportSize.y);
+    deferredPassFbo->Resize(viewportSize.x, viewportSize.y);
+    postProcessFbo->Resize(viewportSize.x, viewportSize.y);
 
     //glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 20, -1, "SKYBOX CREATION");
     //skybox = std::make_shared<Skybox>("Assets/Skybox/Desert.hdr");
@@ -267,6 +282,36 @@ void Application::Update()
         }
     }
     localParamsUbo->Unmap();
+
+    #pragma endregion
+
+
+    #pragma region SSAO Parameters Uniform Buffer
+
+    ssaoParamsUbo->Map();
+    {
+        ssaoParamsUbo->AlignHead(uniformBlockAlignment);
+        ssaoParamsOffset = ssaoParamsUbo->GetHead();
+
+        ssaoParamsUbo->PushVector2f(viewportSize);
+        ssaoParamsUbo->PushMatrix4f(camera.GetProjection());
+        ssaoParamsUbo->Push1i(ssaoProps.noiseSize); // Noise Size
+        ssaoParamsUbo->Push1i(ssaoKernel.size()); // Kernel Size
+        ssaoParamsUbo->Push1f(ssaoProps.radius); // Hemi-Sphere Radius
+        ssaoParamsUbo->Push1f(ssaoProps.bias); // Bias
+        ssaoParamsUbo->Push1f(ssaoProps.strength); // Bias
+        ssaoParamsUbo->Push1f(camera.GetNearClip()); // Bias
+        ssaoParamsUbo->Push1f(camera.GetFarClip()); // Bias
+
+        for (auto value : ssaoKernel)
+        {
+            ssaoParamsUbo->AlignHead(sizeof(glm::vec4));
+            ssaoParamsUbo->PushVector3f(value);
+        }
+
+        ssaoParamsSize = ssaoParamsUbo->GetHead() - ssaoParamsOffset;
+    }
+    ssaoParamsUbo->Unmap();
 
     #pragma endregion
 }
@@ -327,6 +372,71 @@ void Application::Render()
 
     gBufferFbo->Unbind();
 
+
+    #pragma region SSAO Pass
+
+    glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 5, -1, "SSAO Pass");
+    ssaoFbo->Bind();
+    glClear(GL_COLOR_BUFFER_BIT);
+    
+    glDrawBuffer(GL_COLOR_ATTACHMENT0);
+
+    ssaoShader->Bind();
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, gBufferFbo->GetNormalsAttachment());
+    ssaoShader->SetUniform1i("uNormalsTexture", 0);
+
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, gBufferFbo->GetPositionAttachment());
+    ssaoShader->SetUniform1i("uPositionTexture", 1);
+
+    glActiveTexture(GL_TEXTURE2);
+    glBindTexture(GL_TEXTURE_2D, ssaoNoiseTexture);
+    ssaoShader->SetUniform1i("uNoiseTexture", 2);
+
+    glActiveTexture(GL_TEXTURE3);
+    glBindTexture(GL_TEXTURE_2D, gBufferFbo->GetDepthAttachment());
+    ssaoShader->SetUniform1i("uDepthTexture", 3);
+
+    ssaoParamsUbo->BindRange(2, ssaoParamsOffset, ssaoParamsSize);
+
+    glDisable(GL_DEPTH_TEST);
+
+    glDrawBuffer(GL_COLOR_ATTACHMENT0);
+    glBindVertexArray(screenSpaceVao);
+    glDrawElements(GL_TRIANGLES, sizeof(quadIndices) / sizeof(u16), GL_UNSIGNED_SHORT, 0);
+
+    glEnable(GL_DEPTH_TEST);
+
+    ssaoFbo->Unbind();
+    glPopDebugGroup();
+
+
+
+    blurredSsaoFbo->Bind();
+
+    blurredSsaoShader->Bind();
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, ssaoFbo->GetColorAttachment());
+    blurredSsaoShader->SetUniform1i("uNoiseTexture", 0);
+
+    glDisable(GL_DEPTH_TEST);
+
+    glDrawBuffer(GL_COLOR_ATTACHMENT0);
+    glBindVertexArray(screenSpaceVao);
+    glDrawElements(GL_TRIANGLES, sizeof(quadIndices) / sizeof(u16), GL_UNSIGNED_SHORT, 0);
+
+    glEnable(GL_DEPTH_TEST);
+
+    blurredSsaoFbo->Unbind();
+
+
+    #pragma endregion
+
+
+
+
     #pragma region Deferred Pass
 
     if (renderPath == RenderPath::DEFERRED)
@@ -361,31 +471,38 @@ void Application::Render()
         glBindTexture(GL_TEXTURE_2D, gBufferFbo->GetPositionAttachment());
         deferredPassShader->SetUniform1i("uPositionTexture", 2);
 
+        
+
         glActiveTexture(GL_TEXTURE3);
-        glBindTexture(GL_TEXTURE_2D, gBufferFbo->GetDepthAttachment());
-        deferredPassShader->SetUniform1i("uDepthTexture", 3);
+        glBindTexture(GL_TEXTURE_2D, gBufferFbo->GetMetallicAttachment());
+        deferredPassShader->SetUniform1i("uMetallicMap", 3);
 
         glActiveTexture(GL_TEXTURE4);
-        glBindTexture(GL_TEXTURE_2D, gBufferFbo->GetMetallicAttachment());
-        deferredPassShader->SetUniform1i("uMetallicMap", 4);
-
-        glActiveTexture(GL_TEXTURE5);
         glBindTexture(GL_TEXTURE_2D, gBufferFbo->GetRoughnessAttachment());
-        deferredPassShader->SetUniform1i("uRoughnessMap", 5);
+        deferredPassShader->SetUniform1i("uRoughnessMap", 4);
 
         // Skybox
-        skybox->BindIrradianceMap(6);
-        deferredPassShader->SetUniform1i("uIrradianceMap", 6);
+        skybox->BindIrradianceMap(5);
+        deferredPassShader->SetUniform1i("uIrradianceMap", 5);
 
-        skybox->BindPrefilterMap(7);
-        deferredPassShader->SetUniform1i("uSkyboxPrefilterMap", 7);
+        skybox->BindPrefilterMap(6);
+        deferredPassShader->SetUniform1i("uSkyboxPrefilterMap", 6);
 
-        skybox->BindBRDF(8);
-        deferredPassShader->SetUniform1i("uSkyboxBrdf", 8);
+        skybox->BindBRDF(7);
+        deferredPassShader->SetUniform1i("uSkyboxBrdf", 7);
 
-        glActiveTexture(GL_TEXTURE9);
+        glActiveTexture(GL_TEXTURE8);
         glBindTexture(GL_TEXTURE_2D, skyboxFbo->GetColorAttachment());
-        deferredPassShader->SetUniform1i("uSkybox", 9);
+        deferredPassShader->SetUniform1i("uSkybox", 8);
+
+        deferredPassShader->SetUniform1i("uSsaoEnabled", ssaoProps.enabled);
+        glActiveTexture(GL_TEXTURE9);
+        glBindTexture(GL_TEXTURE_2D, blurredSsaoFbo->GetColorAttachment());
+        deferredPassShader->SetUniform1i("uSSAOTexture", 9);
+
+        glActiveTexture(GL_TEXTURE10);
+        glBindTexture(GL_TEXTURE_2D, gBufferFbo->GetDepthAttachment());
+        deferredPassShader->SetUniform1i("uDepthTexture", 10);
 
 
         globalParamsUbo->BindRange(0, globalParamsOffset, globalParamsSize);
@@ -418,8 +535,11 @@ void Application::Render()
 
     postProcessShader->Bind();
     postProcessShader->SetUniform1i("renderTarget", currentRenderTargetId);
-    glBindVertexArray(screenSpaceVao);
+    postProcessShader->SetUniform1i("uSsaoEnabled", ssaoProps.enabled);
+    postProcessShader->SetUniform1f("uNear", camera.GetNearClip());
+    postProcessShader->SetUniform1f("uFar", camera.GetFarClip());
 
+    glBindVertexArray(screenSpaceVao);
     bool isDeferred = renderPath == RenderPath::DEFERRED;
 
     // Since the deferred pass only outputs a color texture, we only need to check wether to use one or another.
@@ -441,7 +561,12 @@ void Application::Render()
     glBindTexture(GL_TEXTURE_2D, gBufferFbo->GetDepthAttachment());
     postProcessShader->SetUniform1i("uDepthTexture", 3);
 
-    globalParamsUbo->BindRange(0, globalParamsOffset, globalParamsSize);
+    glActiveTexture(GL_TEXTURE4);
+    glBindTexture(GL_TEXTURE_2D, ssaoNoiseTexture);
+    postProcessShader->SetUniform1i("uNoiseTexture", 4);
+    
+
+    ssaoParamsUbo->BindRange(2, ssaoParamsOffset, ssaoParamsSize);
 
     glDisable(GL_DEPTH_TEST);
     glDrawElements(GL_TRIANGLES, sizeof(quadIndices) / sizeof(u16), GL_UNSIGNED_SHORT, 0);
@@ -481,7 +606,7 @@ void Application::OnImGuiRender()
                 ImGui::DragFloat("Sphere Size", &sphereLightsSize, 0.01f, 0.0f, 1.0f);
 
                 ImGui::EndMenu();
-            }
+            }            
             ImGui::EndMenu();
         }
         if (ImGui::BeginMenu("Renderer"))
@@ -762,9 +887,7 @@ void Application::OnImGuiRender()
                             ImGui::Text("Metallic Map:");
                             if (auto metallicMap = mat->GetMetallicMap())
                             {
-                                //glColorMask(GL_FALSE, GL_TRUE, GL_TRUE, GL_TRUE);
                                 ImGui::Image((ImTextureID)metallicMap->GetId(), { 128,128 });
-                                //glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
                             }
                             if (ImGui::Button("Change##2"))
                             {
@@ -781,11 +904,9 @@ void Application::OnImGuiRender()
                             ImGui::Dummy({ 0,3.5 });
 
                             ImGui::Text("Roughness Map:");
-                            if (auto specularMap = mat->GetSpecularMap())
+                            if (auto specularMap = mat->GetRoughnessMap())
                             {
-                                //glColorMask(GL_TRUE, GL_FALSE, GL_FALSE, GL_FALSE);
                                 ImGui::Image((ImTextureID)specularMap->GetId(), { 128,128 });
-                                //glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
                             }
                             if (ImGui::Button("Change##3"))
                             {
@@ -796,7 +917,7 @@ void Application::OnImGuiRender()
                             ImGui::SameLine();
                             if (ImGui::Button("Remove##3"))
                             {
-                                mat->SetSpecularMap(nullptr);
+                                mat->SetRoughnessMap(nullptr);
                             }
 
                             ImGui::Dummy({ 0,3.5 });
@@ -829,6 +950,18 @@ void Application::OnImGuiRender()
 
             //}
         }
+    }
+    ImGui::End();
+
+
+
+    ImGui::Begin("SSAO");
+    {
+        ImGui::Checkbox("Enabled", &ssaoProps.enabled);
+        ImGui::DragFloat("Radius", &ssaoProps.radius, 0.01f, 0.001f);
+        ImGui::DragFloat("Strength", &ssaoProps.strength, 0.01f, 0.001f);
+        ImGui::DragFloat("Bias", &ssaoProps.bias, 0.001f, 0.01f);
+        ImGui::DragInt("Noise Size", &ssaoProps.noiseSize, 0.1f, 0);
     }
     ImGui::End();
 
@@ -918,7 +1051,7 @@ bool Application::ShowTexturesPanel(std::shared_ptr<Material> material, int texI
                         case 0: material->SetAlbedoMap(texture); ret = true; break;
                         case 1: material->SetNormalMap(texture); ret = true; break;
                         case 2: material->SetMetallicMap(texture); ret = true; break;
-                        case 3: material->SetSpecularMap(texture); ret = true; break;
+                        case 3: material->SetRoughnessMap(texture); ret = true; break;
                     }
                 }
                 ImGui::Text(texture->GetName().c_str());
@@ -930,4 +1063,45 @@ bool Application::ShowTexturesPanel(std::shared_ptr<Material> material, int texI
     }
 
     return ret;
+}
+
+void Application::GenerateSSAOKernel()
+{
+    std::uniform_real_distribution<float> randomFloats(0.0, 1.0); // random floats between [0.0, 1.0]
+    std::default_random_engine generator;
+    for (unsigned int i = 0; i < 64; ++i)
+    {
+        glm::vec3 sample(
+            randomFloats(generator) * 2.0 - 1.0,
+            randomFloats(generator) * 2.0 - 1.0,
+            randomFloats(generator)
+        );
+        float scale = (float)i / 64.0;
+        scale = LerpFloat(0.1f, 1.0f, scale * scale);
+        sample *= scale;
+        ssaoKernel.push_back(sample);
+    }
+
+    for (unsigned int i = 0; i < 16; i++)
+    {
+        glm::vec3 noise(
+            randomFloats(generator) * 2.0 - 1.0,
+            randomFloats(generator) * 2.0 - 1.0,
+            0.0f);
+        ssaoNoise.push_back(noise);
+    }
+
+    glGenTextures(1, &ssaoNoiseTexture);
+    glBindTexture(GL_TEXTURE_2D, ssaoNoiseTexture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, 4, 4, 0, GL_RGB, GL_FLOAT, &ssaoNoise[0]);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+}
+
+float Application::LerpFloat(float a, float b, float f)
+{
+    return a + f * (b - a);
 }

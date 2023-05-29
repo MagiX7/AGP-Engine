@@ -5,6 +5,7 @@
 struct FramebufferAttachments
 {
 	bool includeColor = true;
+	int colorChannels = 4;
 	bool includeNormals = true;
 	bool includePosition = true;
 	bool includeDepth = true;

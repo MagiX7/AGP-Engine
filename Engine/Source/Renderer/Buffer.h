@@ -79,6 +79,7 @@ public:
 
 	void Push1i(int value);
 	void Push1f(float value);
+	void PushVector2f(const glm::vec2& value);
 	void PushVector3f(const glm::vec3& value);
 	void PushVector4f(const glm::vec4& value);
 	void PushMatrix3f(const glm::mat3& value);

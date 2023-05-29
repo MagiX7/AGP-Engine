@@ -41,10 +41,10 @@ void Material::Bind()
 		shader->SetUniform1i("uMetallicMap", 2);
 	}
 
-	shader->SetUniform1i("hasRoughnessMap", specularMap ? 1 : 0);
-	if (specularMap)
+	shader->SetUniform1i("hasRoughnessMap", roughnessMap ? 1 : 0);
+	if (roughnessMap)
 	{
-		specularMap->Bind(3);
+		roughnessMap->Bind(3);
 		shader->SetUniform1i("uRoughnessMap", 3);
 	}
 

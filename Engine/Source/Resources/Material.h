@@ -41,8 +41,8 @@ public:
 	inline void SetEmissiveMap(const std::shared_ptr<Texture2D> emissiveTexture) { emissiveMap = emissiveTexture; }
 	inline const std::shared_ptr<Texture2D>& GetEmissiveMap() { return emissiveMap; }
 
-	inline void SetSpecularMap(const std::shared_ptr<Texture2D> specularTexture) { specularMap = specularTexture; }
-	inline const std::shared_ptr<Texture2D>& GetSpecularMap() { return specularMap; }
+	inline void SetRoughnessMap(const std::shared_ptr<Texture2D> roughnessTexture) { roughnessMap = roughnessTexture; }
+	inline const std::shared_ptr<Texture2D>& GetRoughnessMap() { return roughnessMap; }
 
 	inline void SetNormalMap(const std::shared_ptr<Texture2D> normalTexture) { normalMap = normalTexture; }
 	inline const std::shared_ptr<Texture2D>& GetNormalMap() { return normalMap; }
@@ -64,7 +64,7 @@ private:
 	std::shared_ptr<Texture2D> metallicMap;
 	//std::shared_ptr<Texture2D> roughnessMap;
 	std::shared_ptr<Texture2D> emissiveMap;
-	std::shared_ptr<Texture2D> specularMap;
+	std::shared_ptr<Texture2D> roughnessMap;
 	std::shared_ptr<Texture2D> normalMap;
 	std::shared_ptr<Texture2D> bumpMap;
 

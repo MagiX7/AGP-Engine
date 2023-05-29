@@ -104,6 +104,10 @@ private:
 
     void DebugDrawLights();
     bool ShowTexturesPanel(std::shared_ptr<Material> material, int texIndex);
+    
+    void GenerateSSAOKernel();
+    
+    float LerpFloat(float a, float b, float f);
 
 public:
     bool isRunning;
@@ -191,6 +195,29 @@ private:
 
     Camera camera;
     
+    // SSAO
+    std::vector<glm::vec3> ssaoKernel;
+    std::vector<glm::vec3> ssaoNoise;
+    unsigned int ssaoNoiseTexture;
+    std::shared_ptr<Framebuffer> ssaoFbo;
+    std::shared_ptr<Shader> ssaoShader;
+    std::shared_ptr<Framebuffer> blurredSsaoFbo;
+    std::shared_ptr<Shader> blurredSsaoShader;
+    std::shared_ptr<UniformBuffer> ssaoParamsUbo;
+    int ssaoParamsOffset;
+    int ssaoParamsSize;
+    
+    struct SSAOProps
+    {
+        bool enabled = true;
+        int noiseSize = 4;
+        float radius = 0.5f;
+        float bias = 0.025f;
+        float strength = 1.0f;
+    };
+    SSAOProps ssaoProps;
+
+
 
     // Mode
     Mode mode;

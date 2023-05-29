@@ -26,22 +26,15 @@ void main()
 
 #elif defined(FRAGMENT) ///////////////////////////////////////////////
 
-struct Light
+layout(binding = 2, std140) uniform SSAOParams
 {
-	int type;
-	vec3 diffuse;
-	vec3 position; // Or direction for dir lights
-	float intensity;
-};
-
-layout(binding = 0, std140) uniform GlobalParams
-{
-	int renderMode;
-	float uNear;
-	float uFar;
-	vec3 uCamPos;
-	unsigned int uLightCount;
-	Light uLights[32];
+	vec2 viewportSize;
+	mat4 projection;
+	int noiseSize;
+	int kernelSize;
+	float radius;
+	float bias;
+	vec3[64] samples;
 };
 
 
@@ -49,16 +42,17 @@ layout(location = 0) uniform sampler2D uColorTexture;
 layout(location = 1) uniform sampler2D uNormalsTexture;
 layout(location = 2) uniform sampler2D uPositionTexture;
 layout(location = 3) uniform sampler2D uDepthTexture;
+layout(location = 4) uniform sampler2D uNoiseTexture;
 
 in vec3 vPosition;
 in vec2 vTexCoords;
 
 uniform int renderTarget;
+uniform bool uSsaoEnabled;
+uniform float uNear;
+uniform float uFar;
 
 layout(location = 0) out vec4 fragColor;
-//layout(location = 1) out vec4 normalsColor;
-//layout(location = 2) out vec4 positionColor;
-//layout(location = 3) out vec4 depthColor;
 
 float LinearizeDepth(float depth) 
 {
@@ -75,6 +69,7 @@ void main()
 		{
 			vec3 colorTexture = texture(uColorTexture, vTexCoords).rgb;
 			fragColor = vec4(colorTexture, 1);
+
 			break;
 		}
 
