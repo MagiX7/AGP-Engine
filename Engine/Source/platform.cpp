@@ -89,6 +89,7 @@ void OnGlfwKeyboardEvent(GLFWwindow* window, int key, int scancode, int action, 
         case GLFW_KEY_ESCAPE: key = K_ESCAPE; break;
         case GLFW_KEY_ENTER:  key = K_ENTER; break;
         case GLFW_KEY_LEFT_SHIFT: key = K_LEFT_SHIFT; break;
+        case GLFW_KEY_LEFT_ALT: key = K_LEFT_ALT; break;
     }
 
     Application* app = (Application*)glfwGetWindowUserPointer(window);

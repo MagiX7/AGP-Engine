@@ -633,7 +633,7 @@ void Application::OnImGuiRender()
         if (ImGui::DragFloat3("Position", glm::value_ptr(pos), 0.01f))
             camera.SetPosition(pos);
 
-        auto& rot = camera.GetRotation();
+        auto rot = camera.GetRotation();
         if (ImGui::DragFloat3("Rotation", glm::value_ptr(rot), 0.01f))
             camera.SetRotation(rot);
 

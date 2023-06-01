@@ -33,7 +33,7 @@ public:
 	glm::vec3& GetPosition() { return position; }
 	void SetPosition(glm::vec3 value) { position = value; ReCalculateMatrices(); }
 
-	glm::vec3& GetRotation() { return rotation; }
+	glm::vec3 GetRotation() { return {-pitch, -yaw, 0}; }
 	void SetRotation(glm::vec3 value) { rotation = value; ReCalculateMatrices(); }
 
 	//inline const glm::vec3& GetDirection()const { return direction; }
@@ -68,5 +68,7 @@ private:
 	float aspectRatio;
 	float nearClip;
 	float farClip;
+
+	bool isOrbitting = false;
 
 };

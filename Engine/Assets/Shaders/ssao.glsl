@@ -84,7 +84,6 @@ void main()
 		offset.xyz /= offset.w;               // perspective divide
 		offset.xyz  = offset.xyz * 0.5 + 0.5; // transform to range 0.0 - 1.0  
 
-
 		float sampleDepth = texture2D(uPositionTexture, offset.xy).z;
 
 		float rangeCheck = smoothstep(0.0, 1.0, radius / abs(fragPos.z - sampleDepth));
