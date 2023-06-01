@@ -155,7 +155,7 @@ void Application::Init()
 
     texturedGeometryShader = std::make_shared<Shader>("Assets/Shaders/shaders.glsl", "TEXTURED_GEOMETRY");
     
-    forwardPassShader = std::make_shared<Shader>("Assets/Shaders/model.glsl", "MODEL");
+    forwardPassShader = std::make_shared<Shader>("Assets/Shaders/forward_pass.glsl", "FORWARD_PASS");
     geometryPassShader = std::make_shared<Shader>("Assets/Shaders/geometry_pass.glsl", "GEOMETRY_PASS");
     ssaoGeometryPassShader = std::make_shared<Shader>("Assets/Shaders/ssao_geometry_pass.glsl", "SSAO_GEOMETRY_PASS");
     deferredPassShader = std::make_shared<Shader>("Assets/Shaders/deferred_pass.glsl", "DEFERRED");
@@ -401,17 +401,16 @@ void Application::Render()
     #pragma region Post Processing Pass
 
 
-    postProcessFbo->Bind();
     glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 4, -1, "Post-Processing Pass");
+    postProcessFbo->Bind();
 
     //glClearColor(0.08, 0.08, 0.08, 1);
-    //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     //glDrawBuffer(GL_COLOR_ATTACHMENT0);
 
     postProcessShader->Bind();
     postProcessShader->SetUniform1i("renderTarget", currentRenderTargetId);
-    postProcessShader->SetUniform1i("uSsaoEnabled", ssaoProps.enabled);
     postProcessShader->SetUniform1f("uNear", camera.GetNearClip());
     postProcessShader->SetUniform1f("uFar", camera.GetFarClip());
 
@@ -457,8 +456,8 @@ void Application::Render()
         DebugDrawLights();
     }
 
-    glPopDebugGroup();
     postProcessFbo->Unbind();
+    glPopDebugGroup();
 
     #pragma endregion
 

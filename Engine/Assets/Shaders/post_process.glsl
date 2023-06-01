@@ -51,15 +51,16 @@ float LinearizeDepth(float depth)
 
 void main()
 {
+	float depth = LinearizeDepth(texture2D(uDepthTexture, vTexCoords).r) / uFar;
+	int isBg = int((depth >= 0.99));
 	switch (renderTarget)
 	{
 		// Color
 		case 0:
 		{
 			vec3 colorTexture = texture(uColorTexture, vTexCoords).rgb;
-			float depth = LinearizeDepth(texture2D(uDepthTexture, vTexCoords).r) / uFar;
 			float ssao = texture2D(uSsaoTexture, vTexCoords).r;
-			if (!uSsaoEnabled || depth >= 0.99) ssao = 1.0;
+			if (!uSsaoEnabled || isBg == 1) ssao = 1.0;
 
 			fragColor = vec4(colorTexture * ssao, 1);
 			break;
@@ -68,14 +69,14 @@ void main()
 		// Normals
 		case 1:
 		{
-			fragColor = texture(uNormalsTexture, vTexCoords);
+			fragColor = texture(uNormalsTexture, vTexCoords) * (1 - isBg) + vec4(0,0,0,1) * isBg;
 			break;
 		}
 
 		// Positions
 		case 2:
 		{
-			fragColor = texture(uPositionTexture, vTexCoords);
+			fragColor = texture(uPositionTexture, vTexCoords) * (1 - isBg) + vec4(0,0,0,1) * isBg;
 			break;
 		}
 
