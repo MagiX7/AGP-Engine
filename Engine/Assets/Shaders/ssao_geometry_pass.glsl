@@ -1,7 +1,7 @@
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
-#ifdef GEOMETRY_PASS
+#ifdef SSAO_GEOMETRY_PASS
 
 #if defined(VERTEX) ///////////////////////////////////////////////////
 
@@ -29,19 +29,22 @@ out mat4 vModel;
 
 void main()
 {
-	gl_Position = projection * view * model * vec4(aPosition, 1);
-	vNormal = vec3(model * vec4(aNormals, 0));
-	vPosition = (model * vec4(aPosition, 1)).xyz;
-	vModel = model;
 
+	vec4 viewPos = view * model * vec4(aPosition, 1.0);
+	vPosition = viewPos.xyz;
+	mat3 normalMatrix = transpose(inverse(mat3(view * model)));
+	vNormal = normalMatrix * aNormals;
+	gl_Position = projection * viewPos;
+	
 	vTexCoords = aTexCoord;
 
 	vec3 N = normalize(vNormal);
 	vec3 T = aTangents;
 	T = normalize(T - dot(T, N) * N);
 	vec3 B = cross(T, N);
-	TBN = mat3(T, B, N); 
+	TBN = mat3(T, B, N);
 
+	//vNormal = TBN * vNormal;
 }
 
 #elif defined(FRAGMENT) ///////////////////////////////////////////////
@@ -82,10 +85,7 @@ void main()
 	//				+ vNormal * (1.0 - hasNormalMap);
 	//normal = normalize(normal);
 
-	vec3 normal = normalize(TBN * (texture2D(uNormalMap, vTexCoords).rgb) * hasNormalMap
-					+ vNormal * (1.0 - hasNormalMap));
-
-	normal = normalize(normal);
+	vec3 normal = normalize(vNormal);
 
 	vec3 albedo = texture2D(uAlbedoMap, vTexCoords).rgb;// * hasAlbedoMap + uAlbedoColor * (1.0 - hasAlbedoMap);
 	float metallic = texture2D(uMetallicMap, vTexCoords).r;

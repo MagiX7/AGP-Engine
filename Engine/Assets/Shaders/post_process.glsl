@@ -26,39 +26,22 @@ void main()
 
 #elif defined(FRAGMENT) ///////////////////////////////////////////////
 
-struct Light
-{
-	int type;
-	vec3 diffuse;
-	vec3 position; // Or direction for dir lights
-	float intensity;
-};
-
-layout(binding = 0, std140) uniform GlobalParams
-{
-	int renderMode;
-	float uNear;
-	float uFar;
-	vec3 uCamPos;
-	unsigned int uLightCount;
-	Light uLights[32];
-};
-
 
 layout(location = 0) uniform sampler2D uColorTexture;
 layout(location = 1) uniform sampler2D uNormalsTexture;
 layout(location = 2) uniform sampler2D uPositionTexture;
 layout(location = 3) uniform sampler2D uDepthTexture;
+layout(location = 4) uniform sampler2D uSsaoTexture;
 
 in vec3 vPosition;
 in vec2 vTexCoords;
 
 uniform int renderTarget;
+uniform float uNear;
+uniform float uFar;
+uniform bool uSsaoEnabled;
 
 layout(location = 0) out vec4 fragColor;
-//layout(location = 1) out vec4 normalsColor;
-//layout(location = 2) out vec4 positionColor;
-//layout(location = 3) out vec4 depthColor;
 
 float LinearizeDepth(float depth) 
 {
@@ -68,27 +51,32 @@ float LinearizeDepth(float depth)
 
 void main()
 {
+	float depth = LinearizeDepth(texture2D(uDepthTexture, vTexCoords).r) / uFar;
+	int isBg = int((depth >= 0.99));
 	switch (renderTarget)
 	{
 		// Color
 		case 0:
 		{
 			vec3 colorTexture = texture(uColorTexture, vTexCoords).rgb;
-			fragColor = vec4(colorTexture, 1);
+			float ssao = texture2D(uSsaoTexture, vTexCoords).r;
+			if (!uSsaoEnabled || isBg == 1) ssao = 1.0;
+
+			fragColor = vec4(colorTexture * ssao, 1);
 			break;
 		}
 
 		// Normals
 		case 1:
 		{
-			fragColor = texture(uNormalsTexture, vTexCoords);
+			fragColor = texture(uNormalsTexture, vTexCoords) * (1 - isBg) + vec4(0,0,0,1) * isBg;
 			break;
 		}
 
 		// Positions
 		case 2:
 		{
-			fragColor = texture(uPositionTexture, vTexCoords);
+			fragColor = texture(uPositionTexture, vTexCoords) * (1 - isBg) + vec4(0,0,0,1) * isBg;
 			break;
 		}
 

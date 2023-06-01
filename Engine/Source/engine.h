@@ -102,8 +102,18 @@ private:
     Application(const Application&);
     Application& operator=(Application&) {}
 
+    void RenderForwardPipeline();
+    void RenderDeferredPipeline();
+
+    void SetPBRShaderParams(const std::shared_ptr<Shader>& shader, const std::shared_ptr<Material>& material);
+
     void DebugDrawLights();
     bool ShowTexturesPanel(std::shared_ptr<Material> material, int texIndex);
+    
+    void SSAOPass();
+    void GenerateSSAOKernel();
+    
+    float LerpFloat(float a, float b, float f);
 
 public:
     bool isRunning;
@@ -149,6 +159,9 @@ private:
     u32 magentaTexIdx;
 
     // Shaders
+    std::shared_ptr<Shader> forwardPassShader;
+    std::shared_ptr<Shader> geometryPassShader;
+    std::shared_ptr<Shader> ssaoGeometryPassShader;
     std::shared_ptr<Shader> deferredPassShader;
     std::shared_ptr<Shader> postProcessShader;
 
@@ -161,8 +174,10 @@ private:
     int maxUniformBufferSize;
     int uniformBlockAlignment;
 
-    // Models
+    // Framebuffers
+    std::shared_ptr<Framebuffer> forwardPassFbo;
     std::shared_ptr<Framebuffer> gBufferFbo;
+    std::shared_ptr<Framebuffer> ssaoGBufferFbo;
     std::shared_ptr<Framebuffer> deferredPassFbo;
     std::shared_ptr<Framebuffer> postProcessFbo;
     std::shared_ptr<Framebuffer> skyboxFbo;
@@ -191,6 +206,29 @@ private:
 
     Camera camera;
     
+    // SSAO
+    std::vector<glm::vec3> ssaoKernel;
+    std::vector<glm::vec3> ssaoNoise;
+    unsigned int ssaoNoiseTexture;
+    std::shared_ptr<Framebuffer> ssaoFbo;
+    std::shared_ptr<Shader> ssaoShader;
+    std::shared_ptr<Framebuffer> blurredSsaoFbo;
+    std::shared_ptr<Shader> blurredSsaoShader;
+    std::shared_ptr<UniformBuffer> ssaoParamsUbo;
+    int ssaoParamsOffset;
+    int ssaoParamsSize;
+    
+    struct SSAOProps
+    {
+        bool enabled = true;
+        float radius = 8.0f;
+        float strength = 2.0f;
+        float bias = 0.025f;
+        int noiseSize = 4;
+    };
+    SSAOProps ssaoProps;
+
+
 
     // Mode
     Mode mode;

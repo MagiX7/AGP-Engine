@@ -117,6 +117,11 @@ void UniformBuffer::Push1f(float value)
     PushAlignedData(&value, sizeof(value), 4);
 }
 
+void UniformBuffer::PushVector2f(const glm::vec2& value)
+{
+    PushAlignedData(glm::value_ptr(value), sizeof(value), sizeof(glm::vec4));
+}
+
 void UniformBuffer::PushVector3f(const glm::vec3& value)
 {
     PushAlignedData(glm::value_ptr(value), sizeof(value), sizeof(glm::vec4));

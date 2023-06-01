@@ -5,6 +5,7 @@
 #include <glm/gtx/transform.hpp>
 #include <glm/gtx/euler_angles.hpp>
 #include <glm/gtx/quaternion.hpp>
+#include <glm/gtx/rotate_vector.hpp>
 
 #include <iostream>
 
@@ -72,24 +73,40 @@ void Camera::Update(float dt)
 			recalc = true;
 		}
 
-
 		glm::vec2 delta = input.mousePos - lastMousePos;
-		if (delta.x != 0)
+
+		if (delta.x != 0 || delta.y != 0)
 		{
-			yaw += delta.x * dt * 4.0f;
+			glm::quat rotate = glm::quat(glm::vec3(glm::sign(-position.z) * delta.y, -delta.x, 0) * dt * 0.2f);
+			forward = glm::normalize(rotate * forward);
 			recalc = true;
 		}
-		if (delta.y != 0)
+
+		isOrbitting = false;
+	}
+
+	if (input.keys[Key::K_LEFT_ALT] == BUTTON_PRESS
+		&& input.mouseButtons[MouseButton::LEFT] == BUTTON_PRESS)
+	{
+		glm::vec2 delta = input.mousePos - lastMousePos;
+		
+		if (delta.x != 0 || delta.y != 0)
 		{
-			pitch -= /*(up.y > 0.0f ? 1.0f : -1.0f) **/ delta.y * dt * 4.0f;
+			glm::quat rotate = glm::quat(glm::vec3(glm::sign(-position.z) * delta.y, delta.x, 0) * dt * 0.2f);
+			position = glm::normalize(rotate) * position;
+			forward = glm::normalize(target - position);
+
+			isOrbitting = true;
 			recalc = true;
 		}
+
 	}
 
 	lastMousePos = input.mousePos;
 
 	if (recalc)
 		ReCalculateMatrices();
+	
 }
 
 void Camera::SetViewportSize(uint32_t width, uint32_t height)
@@ -100,18 +117,11 @@ void Camera::SetViewportSize(uint32_t width, uint32_t height)
 
 void Camera::ReCalculateMatrices()
 {
-	proj = glm::perspective(glm::radians(yFov), aspectRatio, nearClip, farClip);
-
-	glm::vec3 front;
-	front.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
-	front.y = sin(glm::radians(pitch));
-	front.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
-	forward = front;
-
 	right = glm::normalize(glm::cross({ 0,1,0 }, forward));
 	up = glm::cross(forward, right);
 	right = glm::normalize(glm::cross(forward, up));
 
+	proj = glm::perspective(glm::radians(yFov), aspectRatio, nearClip, farClip);
 	view = glm::lookAt(position, position + forward, up);
 	
 	viewProj = proj * view;

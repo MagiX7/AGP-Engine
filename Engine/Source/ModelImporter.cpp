@@ -247,6 +247,21 @@ void ModelImporter::ProcessMaterial(aiMaterial* material, Material& myMaterial, 
         TexturesManager::AddTexture(tex);
         myMaterial.SetEmissiveMap(tex);
     }
+    if (material->GetTextureCount(aiTextureType_SHININESS) > 0)
+    {
+        material->GetTexture(aiTextureType_SHININESS, 0, &aiFilename);
+
+        std::string fileName = aiFilename.C_Str();
+
+        size_t loc = fileName.find("\\");
+        if (loc != std::string::npos)
+            fileName.replace(loc, loc + 2, "/");
+
+        std::string filepath = directory + fileName;
+        auto tex = std::make_shared<Texture2D>(filepath);
+        TexturesManager::AddTexture(tex);
+        myMaterial.SetRoughnessMap(tex);
+    }
     if (material->GetTextureCount(aiTextureType_SPECULAR) > 0)
     {
         material->GetTexture(aiTextureType_SPECULAR, 0, &aiFilename);
@@ -260,7 +275,7 @@ void ModelImporter::ProcessMaterial(aiMaterial* material, Material& myMaterial, 
         std::string filepath = directory + fileName;
         auto tex = std::make_shared<Texture2D>(filepath);
         TexturesManager::AddTexture(tex);
-        myMaterial.SetSpecularMap(tex);
+        myMaterial.SetMetallicMap(tex);
     }
     if (material->GetTextureCount(aiTextureType_NORMALS) > 0)
     {
