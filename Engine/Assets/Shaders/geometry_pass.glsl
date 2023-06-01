@@ -1,14 +1,15 @@
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
-#ifdef GEO_PASS
+#ifdef GEOMETRY_PASS
 
 #if defined(VERTEX) ///////////////////////////////////////////////////
 
 layout(binding = 1, std140) uniform LocalParams
 {
 	mat4 model;
-	mat4 mvp;
+	mat4 view;
+	mat4 projection;
 };
 
 layout(location = 0) in vec3 aPosition;
@@ -17,77 +18,84 @@ layout(location = 2) in vec2 aTexCoord;
 layout(location = 3) in vec3 aTangents;
 layout(location = 4) in vec3 aBitangents;
 
+uniform bool uIsSSAOEnabled;
+
 out vec3 vPosition;
 out vec3 vWorldPosition;
 out vec2 vTexCoords;
-out vec3 vNormals;
-
-//uniform mat4 model;
-//uniform mat4 viewProj;
-//uniform mat4 projection;
+out vec3 vNormal;
+out mat3 TBN;
+out mat4 vModel;
 
 void main()
 {
-	vec3 pos = aPosition;
+	gl_Position = projection * view * model * vec4(aPosition, 1);
+	vNormal = vec3(model * vec4(aNormals, 0));
+	vPosition = (model * vec4(aPosition, 1)).xyz;
+	vModel = model;
 
-	gl_Position = mvp * vec4(pos, 1);
 	vTexCoords = aTexCoord;
-	vNormals = (model * vec4(aNormals, 0)).xyz;
-	vPosition = aPosition;
-	vWorldPosition = (model * vec4(aPosition, 1)).xyz;
+
+	vec3 N = normalize(vNormal);
+	vec3 T = aTangents;
+	T = normalize(T - dot(T, N) * N);
+	vec3 B = cross(T, N);
+	TBN = mat3(T, B, N); 
+
 }
 
 #elif defined(FRAGMENT) ///////////////////////////////////////////////
 
-struct Light
-{
-	int type;
-	vec3 diffuse;
-	float intensity;
-	vec3 position; // Or direction for dir lights
-};
+uniform vec3 uAlbedoColor;
+layout(location = 0) uniform sampler2D uAlbedoMap;
+layout(location = 1) uniform sampler2D uNormalMap;
+layout(location = 2) uniform sampler2D uMetallicMap;
+layout(location = 3) uniform sampler2D uRoughnessMap;
+layout(location = 5) uniform samplerCube irradianceMap;
+layout(location = 6) uniform samplerCube skyboxPrefilterMap;
+layout(location = 7) uniform sampler2D skyboxBrdf;
 
-layout(binding = 0, std140) uniform GlobalParams
-{
-	float uNear;
-	float uFar;
-	vec3 uCamPos;
-	unsigned int uLightCount;
-	Light uLights[16];
-};
-
-
-layout(location = 0) uniform sampler2D uTexture;
+uniform int hasAlbedoMap;
+uniform int hasNormalMap;
+uniform int hasMetallicMap;
+uniform int hasRoughnessMap;
+uniform bool uIsSSAOEnabled;
 
 in vec3 vPosition;
-in vec3 vWorldPosition;
 in vec2 vTexCoords;
-in vec3 vNormals;
+in vec3 vNormal;
+in mat3 TBN;
+in mat4 vModel;
 
 layout(location = 0) out vec4 fragColor;
 layout(location = 1) out vec4 normalsColor;
 layout(location = 2) out vec4 positionColor;
-layout(location = 3) out vec4 depthColor;
+layout(location = 3) out vec4 metallicColor;
+layout(location = 4) out vec4 roughnessColor;
+layout(location = 5) out vec4 depthColor;
 
-
-float LinearizeDepth(float depth) 
-{
-    float z = depth * 2.0 - 1.0; // back to NDC 
-    return (2.0 * uNear * uFar) / (uFar + uNear - z * (uFar - uNear));	
-}
 
 void main()
 {
-	vec3 lightCol = max(dot(uLights[0].position, vNormals), 0.0) * uLights[0].diffuse * uLights[0].intensity;
-	vec3 tex = texture(uTexture, vTexCoords).rgb;
+	//vec3 normal = texture2D(uNormalMap, vTexCoords).rgb;
+	//normal = normal * hasNormalMap
+	//				+ vNormal * (1.0 - hasNormalMap);
+	//normal = normalize(normal);
 
-	fragColor = vec4(lightCol * tex, 1);
-	normalsColor = vec4(vNormals, 1);
-	positionColor = vec4(normalize(vWorldPosition), 1);
+	vec3 normal = normalize(TBN * (texture2D(uNormalMap, vTexCoords).rgb) * hasNormalMap
+					+ vNormal * (1.0 - hasNormalMap));
 
-	float depth = LinearizeDepth(gl_FragCoord.z) / uFar;
-	depthColor = vec4(vec3(depth), 1);
+	normal = normalize(normal);
 
+	vec3 albedo = texture2D(uAlbedoMap, vTexCoords).rgb;// * hasAlbedoMap + uAlbedoColor * (1.0 - hasAlbedoMap);
+	float metallic = texture2D(uMetallicMap, vTexCoords).r;
+	float roughness = texture2D(uRoughnessMap, vTexCoords).r;
+
+	fragColor = vec4(albedo, 1);
+	normalsColor = vec4(normal, 1);
+	positionColor = vec4(vPosition, 1);
+	metallicColor = vec4(vec3(metallic), 1);
+	roughnessColor = vec4(vec3(roughness), 1);
 }
 
 #endif

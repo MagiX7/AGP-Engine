@@ -49,7 +49,7 @@ public:
 
 	inline void SetBumpMap(const std::shared_ptr<Texture2D> bumpTexture) { bumpMap = bumpTexture; }
 	inline const std::shared_ptr<Texture2D>& GetBumpMap() { return bumpMap; }
-
+	
 
 private:
 	std::string name;

@@ -26,29 +26,16 @@ void main()
 
 #elif defined(FRAGMENT) ///////////////////////////////////////////////
 
-layout(binding = 2, std140) uniform SSAOParams
-{
-	vec2 viewportSize;
-	mat4 projection;
-	int noiseSize;
-	int kernelSize;
-	float radius;
-	float bias;
-	vec3[64] samples;
-};
-
 
 layout(location = 0) uniform sampler2D uColorTexture;
 layout(location = 1) uniform sampler2D uNormalsTexture;
 layout(location = 2) uniform sampler2D uPositionTexture;
 layout(location = 3) uniform sampler2D uDepthTexture;
-layout(location = 4) uniform sampler2D uNoiseTexture;
 
 in vec3 vPosition;
 in vec2 vTexCoords;
 
 uniform int renderTarget;
-uniform bool uSsaoEnabled;
 uniform float uNear;
 uniform float uFar;
 

@@ -102,9 +102,15 @@ private:
     Application(const Application&);
     Application& operator=(Application&) {}
 
+    void RenderForwardPipeline();
+    void RenderDeferredPipeline();
+
+    void SetPBRShaderParams(const std::shared_ptr<Shader>& shader, const std::shared_ptr<Material>& material);
+
     void DebugDrawLights();
     bool ShowTexturesPanel(std::shared_ptr<Material> material, int texIndex);
     
+    void SSAOPass();
     void GenerateSSAOKernel();
     
     float LerpFloat(float a, float b, float f);
@@ -153,6 +159,9 @@ private:
     u32 magentaTexIdx;
 
     // Shaders
+    std::shared_ptr<Shader> forwardPassShader;
+    std::shared_ptr<Shader> geometryPassShader;
+    std::shared_ptr<Shader> ssaoGeometryPassShader;
     std::shared_ptr<Shader> deferredPassShader;
     std::shared_ptr<Shader> postProcessShader;
 
@@ -165,8 +174,10 @@ private:
     int maxUniformBufferSize;
     int uniformBlockAlignment;
 
-    // Models
+    // Framebuffers
+    std::shared_ptr<Framebuffer> forwardPassFbo;
     std::shared_ptr<Framebuffer> gBufferFbo;
+    std::shared_ptr<Framebuffer> ssaoGBufferFbo;
     std::shared_ptr<Framebuffer> deferredPassFbo;
     std::shared_ptr<Framebuffer> postProcessFbo;
     std::shared_ptr<Framebuffer> skyboxFbo;
@@ -210,10 +221,10 @@ private:
     struct SSAOProps
     {
         bool enabled = true;
-        int noiseSize = 4;
-        float radius = 0.5f;
+        float radius = 8.0f;
+        float strength = 2.0f;
         float bias = 0.025f;
-        float strength = 1.0f;
+        int noiseSize = 4;
     };
     SSAOProps ssaoProps;
 

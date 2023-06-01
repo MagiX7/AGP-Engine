@@ -8,7 +8,8 @@
 layout(binding = 1, std140) uniform LocalParams
 {
 	mat4 model;
-	mat4 mvp;
+	mat4 view;
+	mat4 projection;
 };
 
 layout(location = 0) in vec3 aPosition;
@@ -32,9 +33,8 @@ void main()
 {
 	vec3 pos = aPosition;
 
-	gl_Position = mvp * vec4(pos, 1);
+	gl_Position = projection * view * model * vec4(pos, 1);
 	vTexCoords = aTexCoord;
-	//vNormals = (model * vec4(normalize(aNormals), 0)).xyz;
 	vNormals = aNormals;
 	vPosition = aPosition;
 	vWorldPosition = (model * vec4(aPosition, 1)).xyz;
@@ -281,8 +281,6 @@ void main()
 	{
 		// If deferred, just output the albedo
 		col = albedo;
-		//metallicColor = vec4(vec3(metallic), 1);
-		//roughnessColor = vec4(vec3(roughness), 1);
 	}
 
 	fragColor = vec4(col, 1);
