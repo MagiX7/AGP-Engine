@@ -31,6 +31,7 @@ layout(location = 0) uniform sampler2D uColorTexture;
 layout(location = 1) uniform sampler2D uNormalsTexture;
 layout(location = 2) uniform sampler2D uPositionTexture;
 layout(location = 3) uniform sampler2D uDepthTexture;
+layout(location = 4) uniform sampler2D uSsaoTexture;
 
 in vec3 vPosition;
 in vec2 vTexCoords;
@@ -38,6 +39,7 @@ in vec2 vTexCoords;
 uniform int renderTarget;
 uniform float uNear;
 uniform float uFar;
+uniform bool uSsaoEnabled;
 
 layout(location = 0) out vec4 fragColor;
 
@@ -55,8 +57,11 @@ void main()
 		case 0:
 		{
 			vec3 colorTexture = texture(uColorTexture, vTexCoords).rgb;
-			fragColor = vec4(colorTexture, 1);
+			float depth = LinearizeDepth(texture2D(uDepthTexture, vTexCoords).r) / uFar;
+			float ssao = texture2D(uSsaoTexture, vTexCoords).r;
+			if (!uSsaoEnabled || depth >= 0.99) ssao = 1.0;
 
+			fragColor = vec4(colorTexture * ssao, 1);
 			break;
 		}
 

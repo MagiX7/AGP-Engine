@@ -389,9 +389,17 @@ void Application::Render()
         RenderDeferredPipeline();
 
 
+    if (ssaoProps.enabled)
+    {
+        glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 20, -1, "SSAO pass");
+        SSAOPass();
+        glPopDebugGroup();
+    }
+
     // The pass that collects all the textures and checks for the current render target to output it
     // Eventually, post processing computations will only be done if the current render target is the albedo attachment
     #pragma region Post Processing Pass
+
 
     postProcessFbo->Bind();
     glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 4, -1, "Post-Processing Pass");
@@ -403,7 +411,7 @@ void Application::Render()
 
     postProcessShader->Bind();
     postProcessShader->SetUniform1i("renderTarget", currentRenderTargetId);
-    //postProcessShader->SetUniform1i("uSsaoEnabled", ssaoProps.enabled);
+    postProcessShader->SetUniform1i("uSsaoEnabled", ssaoProps.enabled);
     postProcessShader->SetUniform1f("uNear", camera.GetNearClip());
     postProcessShader->SetUniform1f("uFar", camera.GetFarClip());
 
@@ -420,19 +428,21 @@ void Application::Render()
     postProcessShader->SetUniform1i("uColorTexture", 0);
 
     glActiveTexture(GL_TEXTURE1);
-    //glBindTexture(GL_TEXTURE_2D, isDeferred ? gBufferFbo->GetNormalsAttachment() : forwardPassFbo->GetNormalsAttachment());
     glBindTexture(GL_TEXTURE_2D, currentGBufferFbo->GetNormalsAttachment());
     postProcessShader->SetUniform1i("uNormalsTexture", 1);
 
     glActiveTexture(GL_TEXTURE2);
-    //glBindTexture(GL_TEXTURE_2D, isDeferred ? gBufferFbo->GetPositionAttachment() : forwardPassFbo->GetPositionAttachment());
     glBindTexture(GL_TEXTURE_2D, currentGBufferFbo->GetPositionAttachment());
     postProcessShader->SetUniform1i("uPositionTexture", 2);
 
     glActiveTexture(GL_TEXTURE3);
-    //glBindTexture(GL_TEXTURE_2D, isDeferred ? gBufferFbo->GetDepthAttachment() : forwardPassFbo->GetDepthAttachment());
     glBindTexture(GL_TEXTURE_2D, currentGBufferFbo->GetDepthAttachment());
     postProcessShader->SetUniform1i("uDepthTexture", 3);
+
+    glActiveTexture(GL_TEXTURE4);
+    glBindTexture(GL_TEXTURE_2D, blurredSsaoFbo->GetColorAttachment());
+    postProcessShader->SetUniform1i("uSsaoTexture", 4);
+    postProcessShader->SetUniformBool("uSsaoEnabled", ssaoProps.enabled);
 
     glDisable(GL_DEPTH_TEST);
     glDrawElements(GL_TRIANGLES, sizeof(quadIndices) / sizeof(u16), GL_UNSIGNED_SHORT, 0);
@@ -898,12 +908,12 @@ void Application::RenderDeferredPipeline()
     // ---------------------------------------------------------------------------
 
 
-    if (ssaoProps.enabled)
+    /*if (ssaoProps.enabled)
     {
         glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 20, -1, "SSAO pass");
         SSAOPass();
         glPopDebugGroup();
-    }
+    }*/
     
 
 
@@ -968,10 +978,10 @@ void Application::RenderDeferredPipeline()
     glBindTexture(GL_TEXTURE_2D, skyboxFbo->GetColorAttachment());
     deferredPassShader->SetUniform1i("uSkybox", 8);
 
-    deferredPassShader->SetUniform1i("uSsaoEnabled", ssaoProps.enabled);
-    glActiveTexture(GL_TEXTURE9);
-    glBindTexture(GL_TEXTURE_2D, blurredSsaoFbo->GetColorAttachment());
-    deferredPassShader->SetUniform1i("uSSAOTexture", 9);
+    //deferredPassShader->SetUniform1i("uSsaoEnabled", ssaoProps.enabled);
+    //glActiveTexture(GL_TEXTURE9);
+    //glBindTexture(GL_TEXTURE_2D, blurredSsaoFbo->GetColorAttachment());
+    //deferredPassShader->SetUniform1i("uSSAOTexture", 9);
 
     glActiveTexture(GL_TEXTURE10);
     glBindTexture(GL_TEXTURE_2D, gBufferFbo->GetDepthAttachment());
