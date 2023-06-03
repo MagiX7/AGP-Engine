@@ -228,6 +228,9 @@ private:
     };
     SSAOProps ssaoProps;
 
+    // Skybox
+    bool renderSkybox = true;
+    bool enableSkyboxReflections = true;
 
 
     // Mode

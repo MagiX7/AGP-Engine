@@ -259,6 +259,8 @@ void Application::Update()
         globalParamsUbo->Push1f(camera.GetNearClip());
         globalParamsUbo->Push1f(camera.GetFarClip());
         globalParamsUbo->PushVector3f(camera.GetPosition());
+        globalParamsUbo->Push1i(renderSkybox);
+        globalParamsUbo->Push1i(enableSkyboxReflections);
         globalParamsUbo->Push1i(lights.size());
         for (auto& light : lights)
         {
@@ -668,21 +670,32 @@ void Application::OnImGuiRender()
 
     ImGui::Begin("Lighting");
     {
-        int idToDelete = -1;
-        for (int i = 0; i < lights.size(); ++i)
+        if (ImGui::CollapsingHeader("Skybox"))
         {
-            ImGui::PushID(i);
+            ImGui::Checkbox("Render Skybox", &renderSkybox);
+            if (renderSkybox)
+                ImGui::Checkbox("Enable Reflection", &enableSkyboxReflections);
+        }
 
-            auto& light = lights[i];
-            if (ImGui::CollapsingHeader(light.GetName().c_str()))
+
+        int idToDelete = -1;
+        if (ImGui::CollapsingHeader("Lights"))
+        {
+            for (int i = 0; i < lights.size(); ++i)
             {
-                light.OnImGuiRender();
-                ImGui::Separator();
-                if (ImGui::Button("Delete"))
-                    idToDelete = i;
-            }
+                ImGui::PushID(i);
 
-            ImGui::PopID();
+                auto& light = lights[i];
+                if (ImGui::CollapsingHeader(light.GetName().c_str()))
+                {
+                    light.OnImGuiRender();
+                    ImGui::Separator();
+                    if (ImGui::Button("Delete"))
+                        idToDelete = i;
+                }
+
+                ImGui::PopID();
+            }
         }
 
         if (idToDelete >= 0)
@@ -827,10 +840,18 @@ void Application::OnImGuiRender()
     ImGui::Begin("SSAO");
     {
         ImGui::Checkbox("Enabled", &ssaoProps.enabled);
-        ImGui::DragFloat("Radius", &ssaoProps.radius, 0.1f, 0.001f);
-        ImGui::DragFloat("Strength", &ssaoProps.strength, 0.01f, 0.001f);
-        ImGui::DragFloat("Bias", &ssaoProps.bias, 0.001f, 0.01f);
-        ImGui::DragInt("Noise Size", &ssaoProps.noiseSize, 0.1f, 0);
+        if (ImGui::DragFloat("Radius", &ssaoProps.radius, 0.1f, 0.001f))
+            if (ssaoProps.radius < 0.0f) ssaoProps.radius = 0.0f;
+
+        if (ImGui::DragFloat("Strength", &ssaoProps.strength, 0.01f, 0.001f))
+            if (ssaoProps.strength < 0.0f) ssaoProps.strength = 0.0f;
+
+        if (ImGui::DragFloat("Bias", &ssaoProps.bias, 0.001f, 0.01f))
+            if (ssaoProps.bias < 0.0f) ssaoProps.bias = 0.0f;
+
+        if (ImGui::DragInt("Noise Size", &ssaoProps.noiseSize, 0.1f, 0))
+            if (ssaoProps.noiseSize < 0) ssaoProps.noiseSize = 0;
+
     }
     ImGui::End();
 
@@ -870,9 +891,12 @@ void Application::RenderForwardPipeline()
     glPopDebugGroup();
 
 
-    glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 1, -1, "Skybox pass");
-    skybox->Draw(camera.GetView(), camera.GetProjection());
-    glPopDebugGroup();
+    if (renderSkybox)
+    {
+        glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 1, -1, "Skybox pass");
+        skybox->Draw(camera.GetView(), camera.GetProjection());
+        glPopDebugGroup();
+    }
 
     forwardPassFbo->Unbind();
 
@@ -904,26 +928,20 @@ void Application::RenderDeferredPipeline()
 
     glPopDebugGroup();
     gBufferFbo->Unbind();
-    // ---------------------------------------------------------------------------
-
-
-    /*if (ssaoProps.enabled)
-    {
-        glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 20, -1, "SSAO pass");
-        SSAOPass();
-        glPopDebugGroup();
-    }*/
-    
+    // ---------------------------------------------------------------------------    
 
 
     // 2. Render Skybox ----------------------------------------------------------
-
-    glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 1, -1, "Skybox pass");
-    skyboxFbo->Bind();
-    skybox->Draw(camera.GetView(), camera.GetProjection());
-    skyboxFbo->Unbind();
-    glPopDebugGroup();
-
+    if (renderSkybox)
+    {
+        glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 1, -1, "Skybox pass");
+        skyboxFbo->Bind();
+        glClearColor(0.0, 0.0, 0.0, 1.0);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        skybox->Draw(camera.GetView(), camera.GetProjection());
+        skyboxFbo->Unbind();
+        glPopDebugGroup();
+    }
     // ---------------------------------------------------------------------------
 
 
@@ -982,9 +1000,9 @@ void Application::RenderDeferredPipeline()
     //glBindTexture(GL_TEXTURE_2D, blurredSsaoFbo->GetColorAttachment());
     //deferredPassShader->SetUniform1i("uSSAOTexture", 9);
 
-    glActiveTexture(GL_TEXTURE10);
+    glActiveTexture(GL_TEXTURE9);
     glBindTexture(GL_TEXTURE_2D, gBufferFbo->GetDepthAttachment());
-    deferredPassShader->SetUniform1i("uDepthTexture", 10);
+    deferredPassShader->SetUniform1i("uDepthTexture", 9);
 
 
     globalParamsUbo->BindRange(0, globalParamsOffset, globalParamsSize);

@@ -1,6 +1,5 @@
 #include "Camera.h"
 #include "../Engine.h"
-//#include "../Input.h"
 
 #include <glm/gtx/transform.hpp>
 #include <glm/gtx/euler_angles.hpp>
@@ -9,7 +8,7 @@
 
 #include <iostream>
 
-#define CAMERA_SPEED 40.0f
+#define CAMERA_SPEED 60.0f
 
 Camera::Camera(const glm::vec3& pos, const glm::vec3& target, float verticalFov, float camAspectRatio)
 	: position(pos), yFov(verticalFov), aspectRatio(camAspectRatio)
@@ -18,6 +17,7 @@ Camera::Camera(const glm::vec3& pos, const glm::vec3& target, float verticalFov,
 
 	nearClip = 0.1f;
 	farClip = 1000.0f;
+	forward = glm::normalize(target - position);
 	ReCalculateMatrices();
 }
 
@@ -77,7 +77,7 @@ void Camera::Update(float dt)
 
 		if (delta.x != 0 || delta.y != 0)
 		{
-			glm::quat rotate = glm::quat(glm::vec3(glm::sign(-position.z) * delta.y, -delta.x, 0) * dt * 0.2f);
+			glm::quat rotate = glm::quat(glm::vec3(glm::sign(-position.z) * delta.y, -delta.x, 0) * dt * 0.05f);
 			forward = glm::normalize(rotate * forward);
 			recalc = true;
 		}

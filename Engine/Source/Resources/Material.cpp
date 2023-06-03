@@ -7,7 +7,7 @@
 
 Material::Material(std::string materialName) : name(materialName)
 {
-	shader = std::make_shared<Shader>("Assets/Shaders/model.glsl", "MODEL");
+	shader = std::make_shared<Shader>("Assets/Shaders/forward_pass.glsl", "FORWARD_PASS");
 }
 
 Material::~Material()

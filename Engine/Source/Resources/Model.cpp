@@ -38,12 +38,6 @@ Mesh::~Mesh()
 
 void Mesh::Draw(bool bindMaterial)
 {
-	//if (!material)
-	//{
-	//	std::cout << "Assign a material to mesh " << name << std::endl;
-	//	return;
-	//}
-
 	if (bindMaterial)
 		material->Bind();
 

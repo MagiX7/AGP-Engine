@@ -37,14 +37,6 @@ void main()
 	gl_Position = projection * viewPos;
 	
 	vTexCoords = aTexCoord;
-
-	vec3 N = normalize(vNormal);
-	vec3 T = aTangents;
-	T = normalize(T - dot(T, N) * N);
-	vec3 B = cross(T, N);
-	TBN = mat3(T, B, N);
-
-	//vNormal = TBN * vNormal;
 }
 
 #elif defined(FRAGMENT) ///////////////////////////////////////////////
@@ -80,11 +72,6 @@ layout(location = 5) out vec4 depthColor;
 
 void main()
 {
-	//vec3 normal = texture2D(uNormalMap, vTexCoords).rgb;
-	//normal = normal * hasNormalMap
-	//				+ vNormal * (1.0 - hasNormalMap);
-	//normal = normalize(normal);
-
 	vec3 normal = normalize(vNormal);
 
 	vec3 albedo = texture2D(uAlbedoMap, vTexCoords).rgb;// * hasAlbedoMap + uAlbedoColor * (1.0 - hasAlbedoMap);

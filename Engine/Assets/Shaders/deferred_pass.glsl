@@ -34,6 +34,8 @@ layout(binding = 0, std140) uniform GlobalParams
 	float uNear;
 	float uFar;
 	vec3 uCamPos;
+	bool uRenderSkybox;
+	bool uEnableSkyboxReflections;
 	unsigned int uLightCount;
 	Light uLights[32];
 };
@@ -50,10 +52,8 @@ layout(location = 6) uniform samplerCube uSkyboxPrefilterMap;
 layout(location = 7) uniform sampler2D uSkyboxBrdf;
 layout(location = 8) uniform sampler2D uSkybox;
 
-layout(location = 9) uniform sampler2D uSSAOTexture;
-layout(location = 10) uniform sampler2D uDepthTexture;
-
-uniform bool uSsaoEnabled;
+//layout(location = 9) uniform sampler2D uSSAOTexture;
+layout(location = 9) uniform sampler2D uDepthTexture;
 
 in vec3 vPosition;
 in vec2 vTexCoords;
@@ -193,7 +193,7 @@ void main()
 	
 	// If far away (very close to camera far clip), render skybox
 	float depth = LinearizeDepth(texture2D(uDepthTexture, vTexCoords).r) / uFar;
-	if (depth >= 0.99)
+	if (depth >= 0.99 && uRenderSkybox)
 	{
 		fragColor = texture2D(uSkybox, vTexCoords);
 		return;
@@ -204,9 +204,6 @@ void main()
 	float metallic = texture2D(uMetallicMap, vTexCoords).r;
 	float roughness = texture2D(uRoughnessMap, vTexCoords).r;
 	vec3 irradiance = texture(uIrradianceMap, normal).rgb;
-	float ssao = texture2D(uSSAOTexture, vTexCoords).r;
-	if (!uSsaoEnabled)
-		ssao = 1.0;
 
 	vec3 col = vec3(0);
 
@@ -228,31 +225,26 @@ void main()
 		}
 	}
 
+	if (uRenderSkybox && uEnableSkyboxReflections)
+	{
+		vec3 F = FresnelSchlickRoughness(max(dot(normal, viewDir), 0.0), F0, roughness);
+		vec3 ks = F;
+		vec3 kd = 1.0 - ks;
+		kd *= 1.0 - metallic;
+		vec3 diffuse = irradiance * albedo;
+
+		vec3 ambient = kd * diffuse;
+
+		vec3 R = reflect(-viewDir, normal);
+		vec3 prefilteredColor = textureLod(uSkyboxPrefilterMap, R, roughness * 2.2).rgb;
+		vec2 brdf = texture2D(uSkyboxBrdf, vec2(max(dot(normal, viewDir), 0.0)), roughness).rg;
+		vec3 specular = prefilteredColor * (F * brdf.x + brdf.y);
+
+		ambient += specular;
 	
-
+		col += ambient;
+	}
 	
-
-	vec3 F = FresnelSchlickRoughness(max(dot(normal, viewDir), 0.0), F0, roughness);
-	vec3 ks = F;
-	vec3 kd = 1.0 - ks;
-	kd *= 1.0 - metallic;
-	vec3 diffuse = irradiance * albedo;
-
-	
-	vec3 ambient = kd * diffuse;
-
-
-	vec3 R = reflect(-viewDir, normal);
-	vec3 prefilteredColor = textureLod(uSkyboxPrefilterMap, R, roughness * 2.2).rgb;
-	vec2 brdf = texture2D(uSkyboxBrdf, vec2(max(dot(normal, viewDir), 0.0)), roughness).rg;
-	vec3 specular = prefilteredColor * (F * brdf.x + brdf.y);
-
-	ambient += specular;
-	
-	col += ambient;
-	col *= ssao;
-	
-	//col = vec3(ssao);
 	fragColor = vec4(col, 1);
 }
 

@@ -64,6 +64,8 @@ layout(binding = 0, std140) uniform GlobalParams
 	float uNear;
 	float uFar;
 	vec3 uCamPos;
+	bool uRenderSkybox;
+	bool uEnableSkyboxReflections;
 	unsigned int uLightCount;
 	Light uLights[32];
 };
@@ -222,9 +224,6 @@ vec3 CalcPointLight(Light light, vec3 normal, vec3 fragPos, vec3 viewDir, in vec
 
 void main()
 {
-	vec3 col = vec3(0);
-	
-
 	vec3 normal = normalize(TBN * (texture2D(uNormalMap, vTexCoords).rgb) * hasNormalMap
 					+ vNormals * (1.0 - hasNormalMap));
 
@@ -235,39 +234,32 @@ void main()
 	float roughness = texture2D(uRoughnessMap, vTexCoords).r;
 	vec3 irradiance = texture(irradianceMap, normal).rgb;
 
-	// Forward
-	if (renderMode == 0)
+
+	vec3 viewDir = normalize(uCamPos - vPosition);
+
+	vec3 col = vec3(0);
+	vec3 F0 = vec3(0);
+
+	for (int i = 0; i < uLightCount; ++i)
 	{
-		//vec4 tex = texture2D(uAlbedoMap, vTexCoords);
-		//col = vec4(lightCol, 1) * tex;
+		// Directional
+		if (uLights[i].type == 0)
+			col += CalcDirLight(uLights[i], normal, viewDir, albedo, metallic, roughness, F0);
 
-		//vec3 lightColor = vec3(0);
-		vec3 viewDir = normalize(uCamPos - vPosition);
+		// Point
+		else if (uLights[i].type == 1)
+			col += CalcPointLight(uLights[i], normal, vWorldPosition, viewDir, albedo, metallic, roughness, F0);
+	}
 
-		vec3 F0 = vec3(0);
-
-		for (int i = 0; i < uLightCount; ++i)
-		{
-			// Directional
-			if (uLights[i].type == 0)
-			{
-				col += CalcDirLight(uLights[i], normal, viewDir, albedo, metallic, roughness, F0);
-			}
-			// Point
-			else if (uLights[i].type == 1)
-			{
-				//col += CalcPointLight(uLights[i], normal, vWorldPosition, viewDir);
-				col += CalcPointLight(uLights[i], normal, vWorldPosition, viewDir, albedo, metallic, roughness, F0);
-			}
-		}
-
+	if (uRenderSkybox && uEnableSkyboxReflections)
+	{		
 		vec3 F = FresnelSchlickRoughness(max(dot(normal, viewDir), 0.0), F0, roughness);
 		vec3 ks = F;
 		vec3 kd = 1.0 - ks;
 		kd *= 1.0 - metallic;
 		vec3 diffuse = irradiance * albedo;
 		vec3 ambient = kd * diffuse;
-		
+	
 		vec3 R = reflect(-viewDir, normal);
 		vec3 prefilteredColor = textureLod(skyboxPrefilterMap, R, roughness * 2.2).rgb;
 		vec2 brdf = texture2D(skyboxBrdf, vec2(max(dot(normal, viewDir), 0.0)), roughness).rg;
@@ -276,13 +268,7 @@ void main()
 		ambient += specular;
 		col += ambient;
 	}
-	// Deferred
-	else
-	{
-		// If deferred, just output the albedo
-		col = albedo;
-	}
-
+	
 	fragColor = vec4(col, 1);
 	normalsColor = vec4(normal, 1);
 	positionColor = vec4(vWorldPosition, 1);
