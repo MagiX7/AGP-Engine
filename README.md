@@ -25,7 +25,11 @@ Another technique that has been implemented is PBR, which is a shading model tha
 By default each objects follows the PBR pipeline, which allows to select the different textures (Albedo, Normals, Metallic, Roughness and Ambient Occlusion) from the inspector panel.
 On the other hand, the shader of the material can be changed to the classic Blinn-Phong shading model.
 
-The options related to PBR to edit is the material itself:
+With the PBR shader selected and all textures applied:
+<img src="https://github.com/MagiX7/AGP-Engine/blob/main/docs/Screenshots/pbr.png">
+
+The options related to PBR to edit is the material itself:  
+<img src="https://github.com/MagiX7/AGP-Engine/blob/main/docs/Screenshots/pbr_options.png">
 
 - All textures can be changed with the button "Change" or removed with the button "Remove. If "Change" button is clicked, a window with all the textures will be shown in order to pick one.
 - The shader of the material can be changed from PBR to Blinn-Phong.
@@ -37,8 +41,19 @@ The shaders used for PBR are:
 ### Image-Based Lighting (IBL)
 In addition to PBR, IBL (Image-Based Lighting) has been implemented. This technique aims to light objects with the surrounding environment, which is known as Skybox.
 
-The options for handling the skybox are the following:
+The skybox drawn looks like this:
+<img src="https://github.com/MagiX7/AGP-Engine/blob/main/docs/Screenshots/skybox_no_reflections.png">
 
+With reflections on the objects:
+<img src="https://github.com/MagiX7/AGP-Engine/blob/main/docs/Screenshots/skybox_with_reflections.png">
+
+And disabled like this:
+<img src="https://github.com/MagiX7/AGP-Engine/blob/main/docs/Screenshots/no_skybox.png">
+
+
+The options for handling the skybox are the following:  
+<img src="https://github.com/MagiX7/AGP-Engine/blob/main/docs/Screenshots/skybox_options.png">  
+  
 - Render Skybox: Defines wether to render the skybox or not. In deferred path saves an extra pass.
 - Enable Reflections: Defines wether the objects get affected by the skybox light.
 
@@ -52,8 +67,14 @@ The shaders used are:
 ### Screen-Space Ambient Occlusion (SSAO)
 The last developed technique is SSAO, a post-processing effect that, essentially, defines the points on the geometry that are less prone to receive light.
 
+The effect enabled looks like this:
+<img src="https://github.com/MagiX7/AGP-Engine/blob/main/docs/Screenshots/ssao.png">
 
-The options for tweaking this effect are:
+And disabled like this:
+<img src="https://github.com/MagiX7/AGP-Engine/blob/main/docs/Screenshots/no_ssao.png">
+
+The options for tweaking this effect are:  
+<img src="https://github.com/MagiX7/AGP-Engine/blob/main/docs/Screenshots/ssao_options.png">  
 
 - Enabled: Defines if the effect is enabled or not.
 - Radius: The zone covered by the occlusion. Higher values will make the effect expand.
