@@ -49,22 +49,12 @@ float LinearizeDepth(float depth)
     return (2.0 * uNear * uFar) / (uFar + uNear - z * (uFar - uNear));	
 }
 
-vec3 GetPosition(in float depth, in vec2 v)
-{
-	float xndc = gl_FragCoord.x / v.x * 2.0 - 1.0;
-	float yndc = gl_FragCoord.y / v.y * 2.0 - 1.0;
-	float zndc = depth * 2.0 - 1.0;
-	vec4 posNDC = vec4(xndc, yndc, yndc, 1.0);
-	vec4 posView = inverse(projection) * posNDC;
-	return posView.xyz / posView.w;
-}
-
 void main()
 {
 	const vec2 noiseScale = viewportSize * noiseSize;
 
 	vec3 fragPos = texture2D(uPositionTexture, vTexCoords).xyz;
-	vec3 normal = normalize(texture2D(uNormalsTexture, vTexCoords).rgb /** 2.0 - 1.0*/);
+	vec3 normal = normalize(texture2D(uNormalsTexture, vTexCoords).rgb);
 	vec3 randomVec = normalize(texture2D(uNoiseTexture, vTexCoords * noiseScale).xyz); 
 
 	vec3 tangent   = normalize(randomVec - normal * dot(randomVec, normal));
@@ -76,25 +66,22 @@ void main()
 	for( int i = 0; i < kernelSize; ++i)
 	{
 		// Get sample position
-		vec3 samplePos = TBN * samples[i]; // from tangent to view-space
+		vec3 samplePos = TBN * samples[i]; // From tangent to view-space
 		samplePos = fragPos + samplePos * radius; 
     
 		vec4 offset = vec4(samplePos, 1.0);
-		offset      = projection * offset;    // from view to clip-space
-		offset.xyz /= offset.w;               // perspective divide
-		offset.xyz  = offset.xyz * 0.5 + 0.5; // transform to range 0.0 - 1.0  
+		offset      = projection * offset;    // From view to clip-space
+		offset.xyz /= offset.w;               // Perspective divide
+		offset.xyz  = offset.xyz * 0.5 + 0.5; // Transform to range 0.0 - 1.0  
 
 		float sampleDepth = texture2D(uPositionTexture, offset.xy).z;
 
 		float rangeCheck = smoothstep(0.0, 1.0, radius / abs(fragPos.z - sampleDepth));
 		occlusion += (sampleDepth >= samplePos.z + bias ? 1.0 : 0.0) * rangeCheck;
-
-		
 	}  
 
 	occlusion = 1.0 - (occlusion / kernelSize);
 	
-	//fragColor = vec4(vec3(occlusion * occlusion), 1);
 	fragColor = vec4(vec3(pow(occlusion, strength)), 1);
 }
 

@@ -190,7 +190,7 @@ private:
     bool debugDrawLights = true;
     float sphereLightsSize = 0.25f;
 
-    std::shared_ptr<Model> patrickModel;
+    std::shared_ptr<Model> model;
     std::shared_ptr<Shader> patrickShader;
     std::shared_ptr<Texture2D> patrickTexture;
 

@@ -134,7 +134,6 @@ void Application::Init()
     FramebufferAttachments att{ true, 4, true, true, true, true, true };
     forwardPassFbo = std::make_shared<Framebuffer>(att, viewportSize.x, viewportSize.y);
     gBufferFbo = std::make_shared<Framebuffer>(att, viewportSize.x, viewportSize.y);
-    ssaoGBufferFbo = std::make_shared<Framebuffer>(att, viewportSize.x, viewportSize.y);
 
     FramebufferAttachments att2{ true, 4, false, false, true };
     deferredPassFbo = std::make_shared<Framebuffer>(att2, viewportSize.x, viewportSize.y);
@@ -146,6 +145,9 @@ void Application::Init()
     FramebufferAttachments att4{ true, 4, false, false, false};
     ssaoFbo = std::make_shared<Framebuffer>(att4, viewportSize.x, viewportSize.y);
     blurredSsaoFbo = std::make_shared<Framebuffer>(att4, viewportSize.x, viewportSize.y);
+
+    FramebufferAttachments att5{ false, -1, true, true, true};
+    ssaoGBufferFbo = std::make_shared<Framebuffer>(att5, viewportSize.x, viewportSize.y);
 
     currentRenderTargetId = 0;
 
@@ -165,8 +167,7 @@ void Application::Init()
     debugLightShader = std::make_shared<Shader>("Assets/Shaders/sphere_light.glsl", "SPHERE_LIGHT");
     ssaoShader = std::make_shared<Shader>("Assets/Shaders/ssao.glsl", "SSAO");
 
-    //patrickModel = ModelImporter::ImportModel("Assets/Models/Patrick/Patrick.obj");
-    patrickModel = ModelImporter::ImportModel("Assets/Models/Cerberus/Cerberus.fbx");
+    model = ModelImporter::ImportModel("Assets/Models/Cerberus/Cerberus.fbx");
     sphereModel = ModelImporter::ImportModel("Assets/Models/Sphere.fbx");
     planeModel = ModelImporter::ImportModel("Assets/Models/Plane.fbx");
     #pragma endregion
@@ -175,18 +176,10 @@ void Application::Init()
 
     #pragma region Entities
 
-    //Entity m1 = Entity("Right Patrick", patrickModel);
-    //m1.SetPosition({ 6,0,0 });
-    //entities.emplace_back(m1);
-
-    Entity m2 = Entity("Center Patrick", patrickModel);
-    m2.SetPosition({ 0,0,0 });
-    m2.SetRotation(glm::radians(glm::vec3(0, 90, 0)));
-    entities.emplace_back(m2);
-
-    //Entity m3 = Entity("Left Patrick", patrickModel);
-    //m3.SetPosition({ -6,0,0 });
-    //entities.emplace_back(m3);   
+    Entity entity = Entity("Cerberus", model);
+    entity.SetPosition({ 0,0,0 });
+    entity.SetRotation(glm::radians(glm::vec3(0, 90, 0)));
+    entities.emplace_back(entity);
 
     #pragma endregion    
 
@@ -1163,8 +1156,6 @@ void Application::SSAOPass()
     glClearColor(0.0, 0.0, 0.0, 1.0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 2, -1, "Geometry pass");
-
     GLuint buffs[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3, GL_COLOR_ATTACHMENT4 };
     glDrawBuffers(5, buffs);
     for (auto& entity : entities)
@@ -1179,10 +1170,7 @@ void Application::SSAOPass()
             mesh->Draw(false);
         }
     }
-
-    glPopDebugGroup();
     ssaoGBufferFbo->Unbind();
-
 
 
     ssaoFbo->Bind();
@@ -1246,7 +1234,7 @@ void Application::SSAOPass()
 
 void Application::GenerateSSAOKernel()
 {
-    std::uniform_real_distribution<float> randomFloats(0.0, 1.0); // random floats between [0.0, 1.0]
+    std::uniform_real_distribution<float> randomFloats(0.0, 1.0);
     std::default_random_engine generator;
     for (unsigned int i = 0; i < 64; ++i)
     {

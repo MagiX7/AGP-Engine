@@ -29,7 +29,6 @@ out mat4 vModel;
 
 void main()
 {
-
 	vec4 viewPos = view * model * vec4(aPosition, 1.0);
 	vPosition = viewPos.xyz;
 	mat3 normalMatrix = transpose(inverse(mat3(view * model)));
@@ -74,7 +73,7 @@ void main()
 {
 	vec3 normal = normalize(vNormal);
 
-	vec3 albedo = texture2D(uAlbedoMap, vTexCoords).rgb;// * hasAlbedoMap + uAlbedoColor * (1.0 - hasAlbedoMap);
+	vec3 albedo = texture2D(uAlbedoMap, vTexCoords).rgb;
 	float metallic = texture2D(uMetallicMap, vTexCoords).r;
 	float roughness = texture2D(uRoughnessMap, vTexCoords).r;
 

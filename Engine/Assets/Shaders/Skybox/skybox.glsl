@@ -15,7 +15,7 @@ uniform mat4 projection;
 
 void main()
 {
-	mat4 rotView = mat4(mat3(view)); // remove translation from the view matrix
+	mat4 rotView = mat4(mat3(view)); // Remove translation
 	vec4 clipPos = projection * rotView * vec4(position, 1.0);
 	gl_Position = clipPos.xyww;
 	
@@ -36,7 +36,6 @@ const float PI = 3.14159265359;
 void main()
 {
 	vec3 color = texture(skybox, localPosition).rgb;
-	//vec3 color = textureLod(skybox, localPosition, 1.2).rgb;
 	color = color / (color + vec3(1.0));
 	color = pow(color, vec3(1.0 / 2.2));
 
