@@ -5,12 +5,6 @@
 
 #if defined(VERTEX) ///////////////////////////////////////////////////
 
-layout(binding = 1, std140) uniform LocalParams
-{
-	mat4 model;
-	mat4 mvp;
-};
-
 layout(location = 0) in vec3 aPosition;
 layout(location = 1) in vec2 aTexCoord;
 
@@ -27,11 +21,12 @@ void main()
 #elif defined(FRAGMENT) ///////////////////////////////////////////////
 
 
-layout(location = 0) uniform sampler2D uColorTexture;
-layout(location = 1) uniform sampler2D uNormalsTexture;
-layout(location = 2) uniform sampler2D uPositionTexture;
-layout(location = 3) uniform sampler2D uDepthTexture;
-layout(location = 4) uniform sampler2D uSsaoTexture;
+layout(location = 0) uniform sampler2D uFinalColorTexture;
+layout(location = 1) uniform sampler2D uAlbedoTexture;
+layout(location = 2) uniform sampler2D uNormalsTexture;
+layout(location = 3) uniform sampler2D uPositionTexture;
+layout(location = 4) uniform sampler2D uDepthTexture;
+layout(location = 5) uniform sampler2D uSsaoTexture;
 
 in vec3 vPosition;
 in vec2 vTexCoords;
@@ -60,7 +55,7 @@ void main()
 		// Color
 		case 0:
 		{
-			vec3 colorTexture = texture(uColorTexture, vTexCoords).rgb;
+			vec3 colorTexture = texture2D(uFinalColorTexture, vTexCoords).rgb;
 			float ssao = texture2D(uSsaoTexture, vTexCoords).r;
 			if (!uSsaoEnabled || isBg == 1) ssao = 1.0;
 
@@ -68,22 +63,28 @@ void main()
 			break;
 		}
 
-		// Normals
 		case 1:
 		{
-			color = texture(uNormalsTexture, vTexCoords) * (1 - isBg) + vec4(0,0,0,1) * isBg;
+			color = texture2D(uAlbedoTexture, vTexCoords) * (1 - isBg) + vec4(0,0,0,1) * isBg;
+			break;
+		}
+
+		// Normals
+		case 2:
+		{
+			color = texture2D(uNormalsTexture, vTexCoords) * (1 - isBg) + vec4(0,0,0,1) * isBg;
 			break;
 		}
 
 		// Positions
-		case 2:
+		case 3:
 		{
-			color = texture(uPositionTexture, vTexCoords) * (1 - isBg) + vec4(0,0,0,1) * isBg;
+			color = texture2D(uPositionTexture, vTexCoords) * (1 - isBg) + vec4(0,0,0,1) * isBg;
 			break;
 		}
 
 		// Depth
-		case 3:
+		case 4:
 		{
 			float depth = LinearizeDepth(texture2D(uDepthTexture, vTexCoords).r) / uFar;
 			color = vec4(vec3(depth), 1);

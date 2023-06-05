@@ -14,56 +14,6 @@
 #include <iostream>
 #include <random>
 
-
-Image LoadImage(const char* filename)
-{
-    Image img = {};
-    stbi_set_flip_vertically_on_load(true);
-    img.pixels = stbi_load(filename, &img.size.x, &img.size.y, &img.nchannels, 0);
-    if (img.pixels)
-    {
-        img.stride = img.size.x * img.nchannels;
-    }
-    else
-    {
-        ELOG("Could not open file %s", filename);
-    }
-    return img;
-}
-
-void FreeImage(Image image)
-{
-    stbi_image_free(image.pixels);
-}
-
-GLuint CreateTexture2DFromImage(Image image)
-{
-    GLenum internalFormat = GL_RGB8;
-    GLenum dataFormat     = GL_RGB;
-    GLenum dataType       = GL_UNSIGNED_BYTE;
-
-    switch (image.nchannels)
-    {
-        case 3: dataFormat = GL_RGB; internalFormat = GL_RGB8; break;
-        case 4: dataFormat = GL_RGBA; internalFormat = GL_RGBA8; break;
-        default: ELOG("LoadTexture2D() - Unsupported number of channels");
-    }
-
-    GLuint texHandle;
-    glGenTextures(1, &texHandle);
-    glBindTexture(GL_TEXTURE_2D, texHandle);
-    glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, image.size.x, image.size.y, 0, dataFormat, dataType, image.pixels);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glGenerateMipmap(GL_TEXTURE_2D);
-    glBindTexture(GL_TEXTURE_2D, 0);
-
-    return texHandle;
-}
-
 Application* Application::instance = nullptr;
 
 Application::Application()
@@ -77,7 +27,6 @@ Application::~Application()
 
 void Application::Init()
 {
-    //camera = Camera({ 0.0f,0,20.0f }, { 0,0,0 }, 45.0f, 1280 / 720);
     camera = Camera({ 0.0f,0,100.0f }, { 0,0,0 }, 45.0f, 1280 / 720);
     
     #pragma region Lights
@@ -131,22 +80,23 @@ void Application::Init()
 
     #pragma region Framebuffers
 
-    FramebufferAttachments att{ true, 4, true, true, true, true, true };
+    FramebufferAttachments att{ true, 4, true, true, true, true, true, true };
     forwardPassFbo = std::make_shared<Framebuffer>(att, viewportSize.x, viewportSize.y);
+    att.includeAlbedo = false;
     gBufferFbo = std::make_shared<Framebuffer>(att, viewportSize.x, viewportSize.y);
 
-    FramebufferAttachments att2{ true, 4, false, false, true };
+    FramebufferAttachments att2{ true, 4, false, false, false, true };
     deferredPassFbo = std::make_shared<Framebuffer>(att2, viewportSize.x, viewportSize.y);
     postProcessFbo = std::make_shared<Framebuffer>(att2, viewportSize.x, viewportSize.y);
     
-    FramebufferAttachments att3{ true, 4, false, false, false};
+    FramebufferAttachments att3{ true, 4, false, false, false, false};
     skyboxFbo = std::make_shared<Framebuffer>(att3, viewportSize.x, viewportSize.y);
     
-    FramebufferAttachments att4{ true, 4, false, false, false};
+    FramebufferAttachments att4{ true, 4, false, false, false, false};
     ssaoFbo = std::make_shared<Framebuffer>(att4, viewportSize.x, viewportSize.y);
     blurredSsaoFbo = std::make_shared<Framebuffer>(att4, viewportSize.x, viewportSize.y);
 
-    FramebufferAttachments att5{ false, -1, true, true, true};
+    FramebufferAttachments att5{ false, -1, false, true, true, true};
     ssaoGBufferFbo = std::make_shared<Framebuffer>(att5, viewportSize.x, viewportSize.y);
 
     currentRenderTargetId = 0;
@@ -393,17 +343,14 @@ void Application::Render()
     }
 
     // The pass that collects all the textures and checks for the current render target to output it
-    // Eventually, post processing computations will only be done if the current render target is the albedo attachment
+    // It also applies the already calculated SSAO
     #pragma region Post Processing Pass
-
 
     glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 4, -1, "Post-Processing Pass");
     postProcessFbo->Bind();
 
-    //glClearColor(0.08, 0.08, 0.08, 1);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    //glDrawBuffer(GL_COLOR_ATTACHMENT0);
 
     postProcessShader->Bind();
     postProcessShader->SetUniform1i("renderTarget", currentRenderTargetId);
@@ -415,28 +362,29 @@ void Application::Render()
 
     std::shared_ptr<Framebuffer> currentGBufferFbo = isDeferred ? gBufferFbo : forwardPassFbo;
 
-    // Since the deferred pass only outputs a color texture, we only need to check wether to use one or another.
-    // For the rest it's safe to get them from the G-buffer
-
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, isDeferred ? deferredPassFbo->GetColorAttachment() : forwardPassFbo->GetColorAttachment());
-    postProcessShader->SetUniform1i("uColorTexture", 0);
+    postProcessShader->SetUniform1i("uFinalColorTexture", 0);
 
     glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D, currentGBufferFbo->GetNormalsAttachment());
-    postProcessShader->SetUniform1i("uNormalsTexture", 1);
+    glBindTexture(GL_TEXTURE_2D, isDeferred ? gBufferFbo->GetColorAttachment() : forwardPassFbo->GetAlbedoAttachment());
+    postProcessShader->SetUniform1i("uAlbedoTexture", 1);
 
     glActiveTexture(GL_TEXTURE2);
-    glBindTexture(GL_TEXTURE_2D, currentGBufferFbo->GetPositionAttachment());
-    postProcessShader->SetUniform1i("uPositionTexture", 2);
+    glBindTexture(GL_TEXTURE_2D, currentGBufferFbo->GetNormalsAttachment());
+    postProcessShader->SetUniform1i("uNormalsTexture", 2);
 
     glActiveTexture(GL_TEXTURE3);
-    glBindTexture(GL_TEXTURE_2D, currentGBufferFbo->GetDepthAttachment());
-    postProcessShader->SetUniform1i("uDepthTexture", 3);
+    glBindTexture(GL_TEXTURE_2D, currentGBufferFbo->GetPositionAttachment());
+    postProcessShader->SetUniform1i("uPositionTexture", 3);
 
     glActiveTexture(GL_TEXTURE4);
+    glBindTexture(GL_TEXTURE_2D, currentGBufferFbo->GetDepthAttachment());
+    postProcessShader->SetUniform1i("uDepthTexture", 4);
+
+    glActiveTexture(GL_TEXTURE5);
     glBindTexture(GL_TEXTURE_2D, blurredSsaoFbo->GetColorAttachment());
-    postProcessShader->SetUniform1i("uSsaoTexture", 4);
+    postProcessShader->SetUniform1i("uSsaoTexture", 5);
     postProcessShader->SetUniformBool("uSsaoEnabled", ssaoProps.enabled);
 
     glDisable(GL_DEPTH_TEST);
@@ -546,7 +494,7 @@ void Application::OnImGuiRender()
             }
 
             {
-                const char* items[] = { "Albedo", "Normals", "Position", "Depth" };
+                const char* items[] = { "Final Render", "Albedo", "Normals", "Position", "Depth" };
                 static int currentItemIndex = 0;
                 const char* combLabel = items[currentItemIndex];
                 if (ImGui::BeginCombo("Render Target", combLabel))
@@ -869,8 +817,8 @@ void Application::RenderForwardPipeline()
 
     glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 2, -1, "Forward pass");
 
-    GLuint buffs[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3, GL_COLOR_ATTACHMENT4 };
-    glDrawBuffers(5, buffs);
+    GLuint buffs[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3, GL_COLOR_ATTACHMENT4, GL_COLOR_ATTACHMENT5 };
+    glDrawBuffers(6, buffs);
 
     globalParamsUbo->BindRange(0, globalParamsOffset, globalParamsSize);
     for (auto& entity : entities)
@@ -953,7 +901,7 @@ void Application::RenderDeferredPipeline()
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, gBufferFbo->GetColorAttachment());
-    deferredPassShader->SetUniform1i("uColorTexture", 0);
+    deferredPassShader->SetUniform1i("uFinalColorTexture", 0);
 
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, gBufferFbo->GetNormalsAttachment());

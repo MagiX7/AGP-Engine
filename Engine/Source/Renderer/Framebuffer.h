@@ -6,6 +6,7 @@ struct FramebufferAttachments
 {
 	bool includeColor = true;
 	int colorChannels = 4;
+	bool includeAlbedo = true;
 	bool includeNormals = true;
 	bool includePosition = true;
 	bool includeDepth = true;
@@ -26,6 +27,7 @@ public:
 
 	inline unsigned int GetId() { return id; }
 	inline unsigned int GetColorAttachment() { return colorAttachment; }
+	inline unsigned int GetAlbedoAttachment() { return albedoAttachment; }
 	inline unsigned int GetNormalsAttachment() { return normalsAttachment; }
 	inline unsigned int GetPositionAttachment() { return positionAttachment; }
 	inline unsigned int GetDepthAttachment() { return depthAttachment; }
@@ -40,6 +42,7 @@ private:
 private:
 	unsigned int id = -1;
 	unsigned int colorAttachment = -1;
+	unsigned int albedoAttachment = -1;
 	unsigned int normalsAttachment = -1;
 	unsigned int positionAttachment = -1;
 	unsigned int depthAttachment = -1;

@@ -85,7 +85,8 @@ layout(location = 1) out vec4 normalsColor;
 layout(location = 2) out vec4 positionColor;
 layout(location = 3) out vec4 metallicColor;
 layout(location = 4) out vec4 roughnessColor;
-layout(location = 5) out vec4 depthColor;
+layout(location = 5) out vec4 albedoColor;
+layout(location = 6) out vec4 depthColor;
 
 
 const float PI = 3.14159265359;
@@ -258,6 +259,7 @@ void main()
 	}
 	
 	fragColor = vec4(col, 1);
+	albedoColor = vec4(albedo, 1);
 	normalsColor = vec4(normal, 1);
 	positionColor = vec4(vWorldPosition, 1);
 	metallicColor = vec4(vec3(metallic), 1);
