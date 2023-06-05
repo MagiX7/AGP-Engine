@@ -240,6 +240,7 @@ void Application::Update()
 {
     camera.Update(deltaTime);
 
+    forwardPassFbo->Resize(viewportSize.x, viewportSize.y);
     gBufferFbo->Resize(viewportSize.x, viewportSize.y);
     deferredPassFbo->Resize(viewportSize.x, viewportSize.y);
     postProcessFbo->Resize(viewportSize.x, viewportSize.y);
@@ -419,7 +420,7 @@ void Application::Render()
     glBindVertexArray(screenSpaceVao);
     bool isDeferred = renderPath == RenderPath::DEFERRED;
 
-    std::shared_ptr<Framebuffer> currentGBufferFbo = isDeferred ? ssaoProps.enabled ? ssaoGBufferFbo : gBufferFbo : forwardPassFbo;
+    std::shared_ptr<Framebuffer> currentGBufferFbo = isDeferred ? gBufferFbo : forwardPassFbo;
 
     // Since the deferred pass only outputs a color texture, we only need to check wether to use one or another.
     // For the rest it's safe to get them from the G-buffer
@@ -736,11 +737,15 @@ void Application::OnImGuiRender()
                     if (ImGui::CollapsingHeader(mesh->GetName().c_str()))
                     {
                         ImGui::PushID(i);
-                        if (ImGui::TreeNodeEx("Material"))
                         {
+                            ImGui::Text("Albedo Color:");
+                            ImGui::SetNextItemWidth(128);
+                            ImGui::ColorPicker3("Color", glm::value_ptr(mat->GetAlbedoColor()));
+
                             ImGui::Text("Albedo Map:");
                             if (auto albedoMap = mat->GetAlbedoMap())
                                 ImGui::Image((ImTextureID)albedoMap->GetId(), { 128,128 });
+                            
                             if (ImGui::Button("Change"))
                             {
                                 showTexturesPanel = true;
@@ -811,8 +816,6 @@ void Application::OnImGuiRender()
                             ImGui::Dummy({ 0,3.5 });
                             ImGui::Separator();
                             ImGui::Dummy({ 0,1.75 });
-
-                            ImGui::TreePop();
                         }
                         ImGui::PopID();
 
@@ -947,7 +950,6 @@ void Application::RenderDeferredPipeline()
 
     // 3. Do light calclulations with G-Buffer data-------------------------------
 
-    //glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
     glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 3, -1, "Deferred pass");
 
     deferredPassFbo->Bind();
@@ -955,9 +957,6 @@ void Application::RenderDeferredPipeline()
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     deferredPassShader->Bind();
-    deferredPassShader->SetUniform1i("renderTarget", currentRenderTargetId);
-    deferredPassShader->SetUniform1i("renderMode", currentRenderTargetId);
-    glBindVertexArray(screenSpaceVao);
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, gBufferFbo->GetColorAttachment());
@@ -970,8 +969,6 @@ void Application::RenderDeferredPipeline()
     glActiveTexture(GL_TEXTURE2);
     glBindTexture(GL_TEXTURE_2D, gBufferFbo->GetPositionAttachment());
     deferredPassShader->SetUniform1i("uPositionTexture", 2);
-
-
 
     glActiveTexture(GL_TEXTURE3);
     glBindTexture(GL_TEXTURE_2D, gBufferFbo->GetMetallicAttachment());
@@ -995,16 +992,11 @@ void Application::RenderDeferredPipeline()
     glBindTexture(GL_TEXTURE_2D, skyboxFbo->GetColorAttachment());
     deferredPassShader->SetUniform1i("uSkybox", 8);
 
-    //deferredPassShader->SetUniform1i("uSsaoEnabled", ssaoProps.enabled);
-    //glActiveTexture(GL_TEXTURE9);
-    //glBindTexture(GL_TEXTURE_2D, blurredSsaoFbo->GetColorAttachment());
-    //deferredPassShader->SetUniform1i("uSSAOTexture", 9);
-
     glActiveTexture(GL_TEXTURE9);
     glBindTexture(GL_TEXTURE_2D, gBufferFbo->GetDepthAttachment());
     deferredPassShader->SetUniform1i("uDepthTexture", 9);
 
-
+    glBindVertexArray(screenSpaceVao);
     globalParamsUbo->BindRange(0, globalParamsOffset, globalParamsSize);
 
     glDisable(GL_DEPTH_TEST);

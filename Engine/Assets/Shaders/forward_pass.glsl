@@ -18,34 +18,24 @@ layout(location = 2) in vec2 aTexCoord;
 layout(location = 3) in vec3 aTangents;
 layout(location = 4) in vec3 aBitangents;
 
-out vec3 vPosition;
 out vec3 vWorldPosition;
 out vec2 vTexCoords;
-out vec3 vNormals;
+out vec3 vNormal;
 out mat3 TBN;
-out mat4 vModel;
-
-//uniform mat4 model;
-//uniform mat4 viewProj;
-//uniform mat4 projection;
 
 void main()
 {
-	vec3 pos = aPosition;
-
-	gl_Position = projection * view * model * vec4(pos, 1);
+	gl_Position = projection * view * model * vec4(aPosition, 1);
 	vTexCoords = aTexCoord;
-	vNormals = aNormals;
-	vPosition = aPosition;
+	vNormal = vec3(model * vec4(aNormals, 0));
 	vWorldPosition = (model * vec4(aPosition, 1)).xyz;
-	vModel = model;
 
-	vec3 N = normalize(aNormals);
-	vec3 T = aTangents;
-	T = normalize(T - dot(T, N) * N);
-	vec3 B = cross(T, N);
+    vec3 T = normalize(mat3(model) * aTangents);
+    vec3 N = normalize(mat3(model) * aNormals);
+    T = normalize(T - dot(T, N) * N);
+    vec3 B = cross(N, T);
+
 	TBN = mat3(T, B, N);
-
 }
 
 #elif defined(FRAGMENT) ///////////////////////////////////////////////
@@ -85,12 +75,10 @@ uniform int hasNormalMap;
 uniform int hasMetallicMap;
 uniform int hasRoughnessMap;
 
-in vec3 vPosition;
 in vec3 vWorldPosition;
 in vec2 vTexCoords;
-in vec3 vNormals;
+in vec3 vNormal;
 in mat3 TBN;
-in mat4 vModel;
 
 layout(location = 0) out vec4 fragColor;
 layout(location = 1) out vec4 normalsColor;
@@ -224,18 +212,18 @@ vec3 CalcPointLight(Light light, vec3 normal, vec3 fragPos, vec3 viewDir, in vec
 
 void main()
 {
-	vec3 normal = normalize(TBN * (texture2D(uNormalMap, vTexCoords).rgb) * hasNormalMap
-					+ vNormals * (1.0 - hasNormalMap));
+	vec3 normal = normalize(TBN * (texture2D(uNormalMap, vTexCoords).rgb * 2 - 1) * hasNormalMap
+					+ (vNormal) * (1.0 - hasNormalMap));
 
-	normal = normalize((vModel * vec4(normal, 0.0)).xyz);
+	normal = normalize(normal);
 
-	vec3 albedo = texture2D(uAlbedoMap, vTexCoords).rgb * hasAlbedoMap + uAlbedoColor * (1.0 - hasAlbedoMap);
-	float metallic = texture2D(uMetallicMap, vTexCoords).r;
-	float roughness = texture2D(uRoughnessMap, vTexCoords).r;
+	vec3 albedo = texture2D(uAlbedoMap, vTexCoords).rgb * uAlbedoColor * hasAlbedoMap + uAlbedoColor * (1 - hasAlbedoMap);
+	float metallic = texture2D(uMetallicMap, vTexCoords).r * hasMetallicMap + 0.0 * (1 - hasMetallicMap);
+	float roughness = texture2D(uRoughnessMap, vTexCoords).r * hasRoughnessMap + 0.0 * (1 - hasRoughnessMap);
 	vec3 irradiance = texture(irradianceMap, normal).rgb;
 
 
-	vec3 viewDir = normalize(uCamPos - vPosition);
+	vec3 viewDir = normalize(uCamPos - vWorldPosition);
 
 	vec3 col = vec3(0);
 	vec3 F0 = vec3(0);

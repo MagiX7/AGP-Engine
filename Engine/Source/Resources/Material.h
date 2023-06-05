@@ -21,7 +21,8 @@ public:
 	inline const std::string GetName() { return name; }
 
 	inline void SetAlbedoColor(const glm::vec3& albedo) { albedoColor = albedo; }
-	inline const glm::vec3& GetAlbedoColor() { return albedoColor; }
+	inline const glm::vec3& GetAlbedoColor() const { return albedoColor; }
+	inline glm::vec3& GetAlbedoColor() { return albedoColor; }
 
 	inline void SetEmissiveColor(const glm::vec3& emissive) { emissiveColor = emissive; }
 	inline const glm::vec3& GetEmissiveColor() { return emissiveColor; }
@@ -34,9 +35,6 @@ public:
 
 	inline void SetMetallicMap(const std::shared_ptr<Texture2D> metallicTexture) { metallicMap = metallicTexture; }
 	inline const std::shared_ptr<Texture2D>& GetMetallicMap() { return metallicMap; }
-
-	/*inline void SetAlbedoMap(const std::shared_ptr<Texture2D> albedoTexture) { albedoMap = albedoTexture; }
-	inline const std::shared_ptr<Texture2D>& GetAlbedoMap() { return albedoMap; }*/
 
 	inline void SetEmissiveMap(const std::shared_ptr<Texture2D> emissiveTexture) { emissiveMap = emissiveTexture; }
 	inline const std::shared_ptr<Texture2D>& GetEmissiveMap() { return emissiveMap; }
@@ -62,10 +60,11 @@ private:
 
 	std::shared_ptr<Texture2D> albedoMap;
 	std::shared_ptr<Texture2D> metallicMap;
-	//std::shared_ptr<Texture2D> roughnessMap;
-	std::shared_ptr<Texture2D> emissiveMap;
 	std::shared_ptr<Texture2D> roughnessMap;
 	std::shared_ptr<Texture2D> normalMap;
+
+
+	std::shared_ptr<Texture2D> emissiveMap;
 	std::shared_ptr<Texture2D> bumpMap;
 
 };

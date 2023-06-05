@@ -52,7 +52,6 @@ layout(location = 6) uniform samplerCube uSkyboxPrefilterMap;
 layout(location = 7) uniform sampler2D uSkyboxBrdf;
 layout(location = 8) uniform sampler2D uSkybox;
 
-//layout(location = 9) uniform sampler2D uSSAOTexture;
 layout(location = 9) uniform sampler2D uDepthTexture;
 
 in vec3 vPosition;
@@ -146,7 +145,6 @@ vec3 CalcDirLight(in Light light, in vec3 normal, in vec3 viewDir, in vec3 albed
 vec3 CalcPointLight(Light light, vec3 normal, vec3 fragPos, vec3 viewDir, in vec3 albedo, in float metallic, in float roughness, out vec3 F0)
 {
 	vec3 lightDir = normalize(light.position - fragPos);
-
 	vec3 halfway = normalize(viewDir + lightDir);
 
 	float NdotL = max(dot(normal, lightDir), 0.0);
@@ -199,7 +197,7 @@ void main()
 		return;
 	}
 
-	vec3 normal = texture2D(uNormalsTexture, vTexCoords).rgb;
+	vec3 normal = normalize(texture2D(uNormalsTexture, vTexCoords).rgb);
 	vec3 albedo = texture2D(uColorTexture, vTexCoords).rgb;
 	float metallic = texture2D(uMetallicMap, vTexCoords).r;
 	float roughness = texture2D(uRoughnessMap, vTexCoords).r;
@@ -220,7 +218,6 @@ void main()
 		// Point
 		else if (uLights[i].type == 1)
 		{
-			//col += CalcPointLight(uLights[i], normal, position, viewDir);
 			col += CalcPointLight(uLights[i], normal, position, viewDir, albedo, metallic, roughness, F0);
 		}
 	}

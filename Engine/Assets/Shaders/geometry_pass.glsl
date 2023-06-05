@@ -25,23 +25,20 @@ out vec3 vWorldPosition;
 out vec2 vTexCoords;
 out vec3 vNormal;
 out mat3 TBN;
-out mat4 vModel;
 
 void main()
 {
 	gl_Position = projection * view * model * vec4(aPosition, 1);
+	vTexCoords = aTexCoord;
 	vNormal = vec3(model * vec4(aNormals, 0));
 	vPosition = (model * vec4(aPosition, 1)).xyz;
-	vModel = model;
 
-	vTexCoords = aTexCoord;
+    vec3 T = normalize(mat3(model) * aTangents);
+    vec3 N = normalize(mat3(model) * aNormals);
+    T = normalize(T - dot(T, N) * N);
+    vec3 B = cross(N, T);
 
-	vec3 N = normalize(vNormal);
-	vec3 T = aTangents;
-	T = normalize(T - dot(T, N) * N);
-	vec3 B = cross(T, N);
-	TBN = mat3(T, B, N); 
-
+	TBN = mat3(T, B, N);
 }
 
 #elif defined(FRAGMENT) ///////////////////////////////////////////////
@@ -65,7 +62,6 @@ in vec3 vPosition;
 in vec2 vTexCoords;
 in vec3 vNormal;
 in mat3 TBN;
-in mat4 vModel;
 
 layout(location = 0) out vec4 fragColor;
 layout(location = 1) out vec4 normalsColor;
@@ -77,19 +73,14 @@ layout(location = 5) out vec4 depthColor;
 
 void main()
 {
-	//vec3 normal = texture2D(uNormalMap, vTexCoords).rgb;
-	//normal = normal * hasNormalMap
-	//				+ vNormal * (1.0 - hasNormalMap);
-	//normal = normalize(normal);
-
-	vec3 normal = normalize(TBN * (texture2D(uNormalMap, vTexCoords).rgb) * hasNormalMap
-					+ vNormal * (1.0 - hasNormalMap));
+	vec3 normal = normalize(TBN * (texture2D(uNormalMap, vTexCoords).rgb * 2 - 1) * hasNormalMap
+					+ (vNormal) * (1.0 - hasNormalMap));
 
 	normal = normalize(normal);
 
-	vec3 albedo = texture2D(uAlbedoMap, vTexCoords).rgb;// * hasAlbedoMap + uAlbedoColor * (1.0 - hasAlbedoMap);
-	float metallic = texture2D(uMetallicMap, vTexCoords).r;
-	float roughness = texture2D(uRoughnessMap, vTexCoords).r;
+	vec3 albedo = texture2D(uAlbedoMap, vTexCoords).rgb * uAlbedoColor * hasAlbedoMap + uAlbedoColor * (1 - hasAlbedoMap);
+	float metallic = texture2D(uMetallicMap, vTexCoords).r * hasMetallicMap + 0.0 * (1 - hasMetallicMap);
+	float roughness = texture2D(uRoughnessMap, vTexCoords).r * hasRoughnessMap + 0.0 * (1 - hasRoughnessMap);
 
 	fragColor = vec4(albedo, 1);
 	normalsColor = vec4(normal, 1);
