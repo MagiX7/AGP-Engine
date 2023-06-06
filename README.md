@@ -23,7 +23,6 @@ The rendering path can be switched from forward (classic) to deferred, storing t
 ### Physically-Based Renderer (PBR)
 Another technique that has been implemented is PBR, which is a shading model that provides a more accurate representation of how light interacts with material depending on its properties.
 By default each objects follows the PBR pipeline, which allows to select the different textures (Albedo, Normals, Metallic, Roughness and Ambient Occlusion) from the inspector panel.
-On the other hand, the shader of the material can be changed to the classic Blinn-Phong shading model.
 
 With the PBR shader selected and all textures applied:
 <img src="https://github.com/MagiX7/AGP-Engine/blob/main/docs/Screenshots/pbr.png">
@@ -31,8 +30,7 @@ With the PBR shader selected and all textures applied:
 The options related to PBR to edit is the material itself:  
 <img src="https://github.com/MagiX7/AGP-Engine/blob/main/docs/Screenshots/pbr_options.png">
 
-- All textures can be changed with the button "Change" or removed with the button "Remove. If "Change" button is clicked, a window with all the textures will be shown in order to pick one.
-- The shader of the material can be changed from PBR to Blinn-Phong.
+- All textures can be changed with the button "Change" or removed with the button "Remove". If "Change" button is clicked, a window with all the textures will be shown in order to pick one.
 
 The shaders used for PBR are:
 - If in deferred: [Deferred Pass Shader](https://github.com/MagiX7/AGP-Engine/blob/main/Engine/Assets/Shaders/deferred_pass.glsl)
