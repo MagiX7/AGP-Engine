@@ -31,12 +31,6 @@ std::shared_ptr<Model> ModelImporter::ImportModel(std::string path)
 
     std::string fileExtension = path.substr(path.find_last_of("."));
 
-    /*if (std::find(extensions.begin(), extensions.end(), fileExtension) == extensions.end())
-    {
-        std::cout << "Model Format " << fileExtension << " from " << path.c_str() << " not supported" << std::endl;
-        return nullptr;
-    }*/
-
     const aiScene* scene = importer.ReadFile(path, aiProcess_Triangulate |
         aiProcess_GenSmoothNormals |
         aiProcess_CalcTangentSpace |
@@ -78,8 +72,6 @@ void ModelImporter::ProcessNode(aiNode* node, const aiScene* scene, Model& model
     {
         aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
         model.AddMesh(ProcessMesh(mesh, scene, model));
-        //model.AddMesh(ProcessSubMesh(mesh, scene));
-        //model.meshes.push_back(ProcessMesh(mesh, scene));
     }
     
     for (unsigned int i = 0; i < node->mNumChildren; i++)
@@ -93,14 +85,11 @@ std::shared_ptr<Mesh> ModelImporter::ProcessMesh(aiMesh* mesh, const aiScene* sc
     std::vector<float> vertices;
     std::vector<uint32_t> indices;
 
-    //vertices.resize(mesh->mNumVertices);
-    //indices.resize(mesh->mNumFaces);
-    
     bool hasNormals = false;
     bool hasTexCoords = false;
     bool hasTangentSpace = false;
 
-    // process vertices
+    // Process vertices
     for (unsigned int i = 0; i < mesh->mNumVertices; i++)
     {
         if (i == 2324)
@@ -120,7 +109,7 @@ std::shared_ptr<Mesh> ModelImporter::ProcessMesh(aiMesh* mesh, const aiScene* sc
             hasNormals = true;
         }
 
-        if (mesh->mTextureCoords[0]) // does the mesh contain texture coordinates?
+        if (mesh->mTextureCoords[0]) // Does the mesh contain texture coordinates?
         {
             hasTexCoords = true;
             vertices.push_back(mesh->mTextureCoords[0][i].x);
@@ -148,7 +137,7 @@ std::shared_ptr<Mesh> ModelImporter::ProcessMesh(aiMesh* mesh, const aiScene* sc
         }
     }
 
-    // process indices
+    // Process indices
     for (unsigned int i = 0; i < mesh->mNumFaces; i++)
     {
         aiFace face = mesh->mFaces[i];
@@ -157,11 +146,6 @@ std::shared_ptr<Mesh> ModelImporter::ProcessMesh(aiMesh* mesh, const aiScene* sc
             indices.push_back(face.mIndices[j]);
         }
     }
-
-    //if (!mesh->HasTangentsAndBitangents())
-    //{
-    //    ComputeTangentsAndBiTangents(vertices, mesh->mNumFaces);
-    //}
 
     VertexBufferLayout vertexBufferLayout = {};
     vertexBufferLayout.attributes.push_back(VertexBufferAttribute{ 0, 3, 0 });
@@ -188,14 +172,6 @@ std::shared_ptr<Mesh> ModelImporter::ProcessMesh(aiMesh* mesh, const aiScene* sc
     std::shared_ptr<Mesh> myMesh = std::make_shared<Mesh>(mesh->mName.C_Str(), vertices, indices, vertexBufferLayout);
     myMesh->SetMaterial(model.GetMaterials()[mesh->mMaterialIndex]);
     return myMesh;
-
-    //Submesh submesh = {};
-    //submesh.vertexBufferLayout = vertexBufferLayout;
-    //submesh.vertices.swap(vertices);
-    //submesh.indices.swap(indices);
-    //myMesh.submeshes.push_back(submesh);
-
-    //return new SubMesh(mesh->mName.C_Str(), vertices, indices);
 }
 
 void ModelImporter::ProcessMaterial(aiMaterial* material, Material& myMaterial, const std::string& directory)
@@ -231,6 +207,7 @@ void ModelImporter::ProcessMaterial(aiMaterial* material, Material& myMaterial, 
         auto tex = std::make_shared<Texture2D>(filepath);
         TexturesManager::AddTexture(tex);
         myMaterial.SetAlbedoMap(tex);
+        myMaterial.SetAlbedoColor(glm::vec3(1));
     }
     if (material->GetTextureCount(aiTextureType_EMISSIVE) > 0)
     {

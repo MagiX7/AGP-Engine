@@ -92,7 +92,7 @@ void Camera::Update(float dt)
 		
 		if (delta.x != 0 || delta.y != 0)
 		{
-			glm::quat rotate = glm::quat(glm::vec3(glm::sign(-position.z) * delta.y, delta.x, 0) * dt * 0.2f);
+			glm::quat rotate = glm::quat(glm::vec3(glm::sign(-position.z) * delta.y, -delta.x, 0) * dt * 0.2f);
 			position = glm::normalize(rotate) * position;
 			forward = glm::normalize(target - position);
 

@@ -131,6 +131,7 @@ void Application::Init()
     entity.SetRotation(glm::radians(glm::vec3(0, 90, 0)));
     entities.emplace_back(entity);
 
+    currentEntity = &entities.back();
     #pragma endregion    
 
     skybox = std::make_shared<Skybox>("Assets/Skybox/Desert.hdr");
@@ -299,25 +300,17 @@ void Application::Render()
         }
         case Mode_Model:
         {
-            /*glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 2, -1, "Geometry pass");
-
-            GLuint buffs[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3, GL_COLOR_ATTACHMENT4 };
-            glDrawBuffers(5, buffs);
-            globalParamsUbo->BindRange(0, globalParamsOffset, globalParamsSize);
-            for (auto& entity : entities)
-            {
-                localParamsUbo->BindRange(1, entity.localParamsOffset, entity.localParamsSize);
-                entity.GetModel()->Draw(true);
-            }
-
-            glPopDebugGroup();
-
             if (renderPath == RenderPath::FORWARD)
+                RenderForwardPipeline();
+            else
+                RenderDeferredPipeline();
+
+            if (ssaoProps.enabled)
             {
-                glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 1, -1, "Skybox pass");
-                skybox->Draw(camera.GetView(), camera.GetProjection());
+                glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 20, -1, "SSAO pass");
+                SSAOPass();
                 glPopDebugGroup();
-            }*/
+            }
 
             break;
         }
@@ -326,21 +319,6 @@ void Application::Render()
         break;
     }
 
-    //gBufferFbo->Unbind();
-
-
-    if (renderPath == RenderPath::FORWARD)
-        RenderForwardPipeline();
-    else
-        RenderDeferredPipeline();
-
-
-    if (ssaoProps.enabled)
-    {
-        glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 20, -1, "SSAO pass");
-        SSAOPass();
-        glPopDebugGroup();
-    }
 
     // The pass that collects all the textures and checks for the current render target to output it
     // It also applies the already calculated SSAO
@@ -577,20 +555,16 @@ void Application::OnImGuiRender()
         if (ImGui::DragFloat3("Position", glm::value_ptr(pos), 0.01f))
             camera.SetPosition(pos);
 
-        auto rot = camera.GetRotation();
-        if (ImGui::DragFloat3("Rotation", glm::value_ptr(rot), 0.01f))
-            camera.SetRotation(rot);
-
         auto near = camera.GetNearClip();
-        if (ImGui::DragFloat("Near Clip", &near))
+        if (ImGui::DragFloat("Near Clip", &near, 0.1f, 0.005, camera.GetFarClip(), "%.3f", 1));
             camera.SetNearClip(near);
 
         auto far = camera.GetFarClip();
-        if (ImGui::DragFloat("Far Clip", &far))
+        if (ImGui::DragFloat("Far Clip", &far, 1.0f, near + 0.01f, 1200, "%.3f", 1))
             camera.SetFarClip(far);
 
         auto verticalFov = camera.GetVerticalFov();
-        if (ImGui::DragFloat("Vertical FOV", &verticalFov))
+        if (ImGui::DragFloat("Vertical FOV", &verticalFov, 0.1f, 0.1f, 100.0f, "%.3f", 1))
             camera.SetVerticalFov(verticalFov);
 
         ImGui::Text("Aspect Ratio: %f", camera.GetAspectRatio());
@@ -605,6 +579,7 @@ void Application::OnImGuiRender()
             if (ImGui::Selectable(entity.GetName().c_str(), &selected))
             {
                 currentEntity = &entity;
+                ImGui::SetItemDefaultFocus();
             }
         }
     }
@@ -667,7 +642,7 @@ void Application::OnImGuiRender()
             ImGui::Separator();
             ImGui::Separator();
 
-            if (ImGui::CollapsingHeader("Material"))
+            if (ImGui::CollapsingHeader("Material", ImGuiTreeNodeFlags_DefaultOpen))
             {
                 int i = 0;
 
@@ -675,7 +650,8 @@ void Application::OnImGuiRender()
                 {
                     auto mat = mesh->GetMaterial();
                     ImGui::Indent();
-                    if (ImGui::CollapsingHeader(mesh->GetName().c_str()))
+                    std::string name = mesh->GetName() != "" ? mesh->GetName() : "Default";
+                    if (ImGui::CollapsingHeader(name.c_str(), ImGuiTreeNodeFlags_DefaultOpen))
                     {
                         ImGui::PushID(i);
                         {
