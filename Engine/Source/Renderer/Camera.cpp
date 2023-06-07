@@ -75,10 +75,16 @@ void Camera::Update(float dt)
 
 		glm::vec2 delta = input.mousePos - lastMousePos;
 
-		if (delta.x != 0 || delta.y != 0)
+		if (delta.x != 0)
 		{
-			glm::quat rotate = glm::quat(glm::vec3(glm::sign(-position.z) * delta.y, -delta.x, 0) * dt * 0.05f);
-			forward = glm::normalize(rotate * forward);
+			yaw += delta.x * dt * 0.1f;
+			forward = glm::normalize(glm::rotate(forward, -delta.x * dt * 0.1f, up));
+			recalc = true;
+		}
+		if (delta.y != 0)
+		{
+			pitch += delta.y * dt * 0.1f;
+			forward = glm::normalize(glm::rotate(forward, -delta.y * dt * 0.1f, right));
 			recalc = true;
 		}
 

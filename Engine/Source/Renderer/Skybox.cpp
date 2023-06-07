@@ -23,7 +23,7 @@ Skybox::Skybox(std::string path) : path(path)
 
     glBindFramebuffer(GL_FRAMEBUFFER, captureFBO);
     glBindRenderbuffer(GL_RENDERBUFFER, captureRBO);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, 512, 512);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, 1024, 1024);
     glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, captureRBO);
 
     stbi_set_flip_vertically_on_load(true);
@@ -56,7 +56,7 @@ Skybox::Skybox(std::string path) : path(path)
     glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapID);
     for (unsigned int i = 0; i < 6; ++i)
     {
-        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB16F, 512, 512, 0, GL_RGB, GL_FLOAT, nullptr);
+        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB16F, 1024, 1024, 0, GL_RGB, GL_FLOAT, nullptr);
     }
 
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -88,7 +88,7 @@ Skybox::Skybox(std::string path) : path(path)
 
 
     glBindFramebuffer(GL_FRAMEBUFFER, captureFBO);
-    glViewport(0, 0, 512, 512);
+    glViewport(0, 0, 1024, 1024);
 
     for (int i = 0; i < 6; ++i)
     {
